@@ -23,6 +23,14 @@ class Openlitespeed < Formula
     depends_on "luajit" => :optional
 
     def install
+        # Disable PHP-Builtin
+        cd  "dist" do
+            inreplace "install.sh", "SETUP_PHP=1", "SETUP_PHP=0"
+            inreplace "install.sh", "PHP_INSTALLED=n", "PHP_INSTALLED=y"
+            inreplace "install.sh", "inst_admin_php\n", "echo \"Disable PHP-Builtin\"\n#inst_admin_php\n"
+            inreplace "functions.sh", "SETUP_PHP=1", "SETUP_PHP=0"
+        end
+
         # Configurations
         get_user = `USERS`
         args = %W[
