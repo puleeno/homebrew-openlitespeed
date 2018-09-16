@@ -23,12 +23,12 @@ class Openlitespeed < Formula
     depends_on "luajit" => :optional
 
     def install
+        # Configurations
         get_user = `USERS`
         args = %W[
             --prefix=#{prefix}
             --sysconfdir=#{etc}/#{name}
             --with-openssl=#{Formula["openssl"].opt_prefix}
-            --with-lsphp7
             --with-user=#{get_user}
             --with-group=staff
             CPPFLAGS=-I#{HOMEBREW_PREFIX}/include
@@ -38,12 +38,6 @@ class Openlitespeed < Formula
         args << "--enable-http2=no" if build.without? "http2"
         args << "--with-lua=#{Formula["luajit"].opt_prefix}/include/luajit-2.0" if build.with? "luajit"
         args << "--enable-debug" if build.with? "debug"
-
-        system "./configure", *args
-
-        # Install
-        system "make"
-        system "make", "install"
 
         # Create logs folder
         unless (prefix/"logs").exist?
@@ -65,6 +59,17 @@ class Openlitespeed < Formula
         unless (prefix/"admin/tmp").exist?
             (prefix/"admin/tmp").mkpath
         end
+
+        system "./configure", *args
+
+        # Install
+        system "make"
+        system "make", "install"
+
+        # Replace relative path by absolute path for Openlitespeed binary
+        inreplace "#{bin}/lswsctrl.open", "$BASE_DIR/..", "#{prefix}"
+        inreplace "#{bin}/lswsctrl.open", "$BASE_DIR\"/\"..", "#{prefix}"
+        inreplace "#{bin}/lswsctrl.open", "\.\/", "#{bin}\/"
     end
 
     def plist; <<~EOS
@@ -84,7 +89,7 @@ class Openlitespeed < Formula
             <key>KeepAlive</key>
             <false/>
             <key>WorkingDirectory</key>
-            <string>#{HOMEBREW_PREFIX}</string>
+            <string>#{prefix}</string>
         </dict>
     </plist>
     EOS
