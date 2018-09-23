@@ -1,7 +1,7 @@
 class Lsphp72 < Formula
     homepage "https://secure.php.net"
-    url "http://php.net/get/php-7.1.22.tar.xz/from/this/mirror"
-    sha256 "9194c9b3a592d8376fde837dde711ec01ee26f8607fc2884047ef6f7c089b15d"
+    url "https://secure.php.net/get/php-7.2.10.tar.xz/from/this/mirror"
+    sha256 "01c2154a3a8e3c0818acbdbc1a956832c828a0380ce6d1d14fea495ea21804f0"
 
     depends_on "puleeno/openlitespeed/openlitespeed" => [:build, :test]
     depends_on "pkg-config" => :build
@@ -33,7 +33,6 @@ class Lsphp72 < Formula
     def install
         config_path = etc/"lsphp/#{php_version}"
         (config_path/"pear.conf").delete if (config_path/"pear.conf").exist?
-        headers_path = "=#{MacOS.sdk_path_if_needed}/usr"
 
         args = %W[
             --prefix=#{Formula["openlitespeed"].prefix}/lsphp72
@@ -66,7 +65,6 @@ class Lsphp72 < Formula
             --enable-sysvshm
             --enable-wddx
             --enable-zip
-            --with-bz2#{headers_path}
             --with-fpm-user=_www
             --with-fpm-group=_www
             --with-freetype-dir=#{Formula["freetype"].opt_prefix}
@@ -75,16 +73,10 @@ class Lsphp72 < Formula
             --with-gmp=#{Formula["gmp"].opt_prefix}
             --with-icu-dir=#{Formula["icu4c"].opt_prefix}
             --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
-            --with-kerberos#{headers_path}
             --with-layout=GNU
-            --with-ldap-sasl#{headers_path}
-            --with-libxml-dir#{headers_path}
-            --with-libedit#{headers_path}
             --with-libzip
-            --with-mhash#{headers_path}
             --with-mysql-sock=/tmp/mysql.sock
             --with-mysqli=mysqlnd
-            --with-ndbm#{headers_path}
             --with-openssl=#{Formula["openssl"].opt_prefix}
             --with-password-argon2=#{Formula["argon2"].opt_prefix}
             --with-pdo-dblib=#{Formula["freetds"].opt_prefix}
@@ -101,8 +93,6 @@ class Lsphp72 < Formula
             --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
             --with-webp-dir=#{Formula["webp"].opt_prefix}
             --with-xmlrpc
-            --with-xsl#{headers_path}
-            --with-zlib#{headers_path}
         ]
         system "./configure", *args
         system "make"
