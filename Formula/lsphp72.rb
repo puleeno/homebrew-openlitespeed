@@ -3,6 +3,8 @@ class Lsphp72 < Formula
     url "https://secure.php.net/get/php-7.2.10.tar.xz/from/this/mirror"
     sha256 "01c2154a3a8e3c0818acbdbc1a956832c828a0380ce6d1d14fea495ea21804f0"
 
+    option "with-default", "Install php as default lsphp for Openlitespeed"
+
     depends_on "puleeno/openlitespeed/openlitespeed" => [:build, :test]
     depends_on "pkg-config" => :build
     depends_on "apr"
@@ -94,6 +96,17 @@ class Lsphp72 < Formula
             --with-webp-dir=#{Formula["webp"].opt_prefix}
             --with-xmlrpc
         ]
+
+        if MacOS.version < :lion
+            args << "--with-curl=#{Formula["curl"].opt_prefix}"
+        else
+            args << "--with-curl#{headers_path}"
+        end
+
+        if MacOS.sdk_path_if_needed
+            args << "--with-iconv=#{Formula["libiconv"].opt_prefix}"
+        end
+
         system "./configure", *args
         system "make"
         system "make", "install"
@@ -101,6 +114,29 @@ class Lsphp72 < Formula
         if build.with? "with-default"
             ln_s #{Formula["openlitespeed"].prefix}/lsphp72/bin/lsphp, #{Formula["openlitespeed"].prefix}/admin/fcgi-bin/admin_php
             ln_s #{Formula["openlitespeed"].prefix}/lsphp72/bin/lsphp, #{Formula["openlitespeed"].prefix}/fcgi-bin/lsphp5
+        end
+
+        # Allow pecl to install outside of Cellar
+        extension_dir = Utils.popen_read("#{bin}/php-config --extension-dir").chomp
+        orig_ext_dir = File.basename(extension_dir)
+        inreplace bin/"php-config", lib/"php", prefix/"pecl"
+        inreplace "php.ini-development", %r{; ?extension_dir = "\./"},
+        "extension_dir = \"#{HOMEBREW_PREFIX}/lib/lsphp/pecl/#{orig_ext_dir}\""
+
+        config_files = {
+            "php.ini-development" => "php.ini",
+            "sapi/fpm/php-fpm.conf" => "php-fpm.conf",
+            "sapi/fpm/www.conf" => "php-fpm.d/www.conf",
+        }
+        config_files.each_value do |dst|
+            dst_default = config_path/"#{dst}.default"
+            rm dst_default if dst_default.exist?
+        end
+        config_path.install config_files
+
+        unless (var/"log/php-fpm.log").exist?
+            (var/"log").mkpath
+            touch var/"log/php-fpm.log"
         end
     end
 
