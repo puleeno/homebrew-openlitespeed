@@ -7,10 +7,5 @@ If you want to install Openlitespeed on your Mac OS X or macOS systems via [home
 ```
 brew tap puleeno/openlitespeed
 brew install openlitespeed
-```
-
-or
-
-```
-brew install puleeno/openlitespeed/openlitespeed
+brew install lsphp72 --with-default
 ```
