@@ -13,6 +13,11 @@ class Openlitespeed < Formula
 
     option "without-http2", "Disable SPDY and http2 over HTTPS"
 
+    bottle do
+        root_url "https://dl.bintray.com/puleeno/openlitespeed"
+        sha256 "2b65098675f5bdca74e7915a701235c80bce7aeed5c99c8f346d865e108ac831" => :high_sierra
+    end
+
     depends_on "pcre"
     depends_on "expat"
     depends_on "openssl"
@@ -38,27 +43,6 @@ class Openlitespeed < Formula
         args << "--enable-http2=no" if build.without? "http2"
         args << "--with-lua=#{Formula["luajit"].opt_prefix}/include/luajit-2.0" if build.with? "luajit"
         args << "--enable-debug" if build.with? "debug"
-
-        # Create logs folder
-        unless (prefix/"logs").exist?
-            (prefix/"logs").mkpath
-        end
-        unless (prefix/"admin/logs").exist?
-            (prefix/"admin/logs").mkpath
-        end
-        unless (prefix/"Example/logs").exist?
-            (prefix/"Example/logs").mkpath
-        end
-
-        # Create admin cgid directory
-        unless (prefix/"admin/cgid").exist?
-            (prefix/"admin/cgid").mkpath
-        end
-
-        # Create admin tmp directories
-        unless (prefix/"admin/tmp").exist?
-            (prefix/"admin/tmp").mkpath
-        end
 
         system "./configure", *args
 
