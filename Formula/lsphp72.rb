@@ -6,6 +6,11 @@ class Lsphp72 < Formula
     option "with-npm", "Install PHP-FPM"
     option "with-default", "Install php as default lsphp for Openlitespeed"
 
+    bottle do
+        root_url "https://dl.bintray.com/puleeno/openlitespeed"
+        sha256 "91ea63454527ebfd0ec84192733f69e2640e938b5b6a8d195b8013424c78365e" => :high_sierra
+    end
+
 
     depends_on "puleeno/openlitespeed/openlitespeed" => [:build, :test]
     depends_on "curl"
