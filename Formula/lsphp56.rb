@@ -1,12 +1,15 @@
 class Lsphp56 < Formula
     homepage "https://secure.php.net"
     url "https://secure.php.net/get/php-5.6.38.tar.xz/from/this/mirror"
-    sha256 "01c2154a3a8e3c0818acbdbc1a956832c828a0380ce6d1d14fea495ea21804f0"
+    sha256 "c2fac47dc6316bd230f0ea91d8a5498af122fb6a3eb43f796c9ea5f59b04aa1e"
 
     option "with-npm", "Install PHP-FPM"
     option "with-default", "Install php as default lsphp for Openlitespeed"
 
-
+    bottle do
+        root_url "https://dl.bintray.com/puleeno/openlitespeed"
+        sha256 "795663e57ca11483c2a8dcc2ffbaa08e6963ffdade5980e213e56328d7577fa1" => :high_sierra
+    end
 
     depends_on "puleeno/openlitespeed/openlitespeed" => [:build, :test]
     depends_on "curl"
@@ -29,6 +32,9 @@ class Lsphp56 < Formula
         # Required due to icu4c dependency
         ENV.cxx11
 
+        # icu4c 61.1 compatability
+        ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
+
         args = %W[
             --prefix=#{prefix}
             --localstatedir=#{var}
@@ -46,12 +52,12 @@ class Lsphp56 < Formula
             --enable-zip
             --with-libzip
             --with-bz2
-            --with-icu-dir=#{Formula["icu4c"].opt_prefix}
             --with-mysqli=mysqlnd
             --with-openssl=#{Formula["openssl"].opt_prefix}
             --with-pdo-mysql=mysqlnd
             --with-pdo-pgsql=#{Formula["libpq"].opt_prefix}
             --with-pdo-sqlite=#{Formula["sqlite"].opt_prefix}
+            --with-icu-dir=#{Formula["icu4c"].opt_prefix}
             --with-pic
             --with-gd
             --with-gmp=#{Formula["gmp"].opt_prefix}
