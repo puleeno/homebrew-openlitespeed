@@ -17,6 +17,7 @@ class Lsphp72 < Formula
     depends_on "gettext"
     depends_on "glib"
     depends_on "icu4c"
+    depends_on "libiconv" if DevelopmentTools.clang_build_version >= 1000
     depends_on "gmp"
     depends_on "jpeg"
     depends_on "libpng"
@@ -29,6 +30,10 @@ class Lsphp72 < Formula
 
     def install
         config_path = etc/"lsphp/#{php_version}"
+
+        # Each extension that is built on Mojave needs a direct reference to the
+        # sdk path or it won't find the headers
+        headers_path = "=#{MacOS.sdk_path_if_needed}/usr"
 
         # Required due to icu4c dependency
         ENV.cxx11
@@ -49,7 +54,7 @@ class Lsphp72 < Formula
             --enable-mysqlnd
             --enable-zip
             --with-libzip
-            --with-bz2
+            --with-bz2#{headers_path}
             --with-icu-dir=#{Formula["icu4c"].opt_prefix}
             --with-mysqli=mysqlnd
             --with-openssl=#{Formula["openssl"].opt_prefix}
@@ -64,10 +69,10 @@ class Lsphp72 < Formula
             --with-gettext=#{Formula["gettext"].opt_prefix}
             --with-pgsql=#{Formula["libpq"].opt_prefix}
             --with-sqlite3=#{Formula["sqlite"].opt_prefix}
-            --with-curl
+            --with-curl=#{Formula["curl"].opt_prefix}
             --with-icon
             --with-xmlrpc
-            --with-zlib
+            --with-zlib=#{Formula["zlib"].opt_prefix}
         ]
 
         if build.with? "fpm"
@@ -76,9 +81,30 @@ class Lsphp72 < Formula
             args << "--with-fpm-group=_www"
         end
 
+        if MacOS.sdk_path_if_needed
+            args << "--with-iconv=#{Formula["libiconv"].opt_prefix}"
+        end
+
         system "./configure", *args
         system "make"
         system "make", "install"
+
+        config_files = {
+            "php.ini-development" => "php.ini",
+        }
+
+        config_files.each_value do |dst|
+            dst_default = config_path/"#{dst}.default"
+            rm dst_default if dst_default.exist?
+        end
+        config_path.install config_files
+
+        if build.with? "fpm"
+            unless (var/"log/php-fpm.log").exist?
+                (var/"log").mkpath
+                touch var/"log/php-fpm.log"
+            end
+        end
     end
 
     def php_version
