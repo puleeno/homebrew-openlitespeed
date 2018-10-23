@@ -3,29 +3,18 @@ class AdminPhp < Formula
     url "https://secure.php.net/get/php-7.2.10.tar.xz/from/this/mirror"
     sha256 "01c2154a3a8e3c0818acbdbc1a956832c828a0380ce6d1d14fea495ea21804f0"
 
-    option "with-npm", "Install PHP-FPM"
-    option "with-default", "Install php as default lsphp for Openlitespeed"
-
     bottle do
         root_url "https://dl.bintray.com/puleeno/openlitespeed"
         sha256 "91ea63454527ebfd0ec84192733f69e2640e938b5b6a8d195b8013424c78365e" => :high_sierra
     end
 
+    depends_on "expat"
 
-    depends_on "puleeno/openlitespeed/openlitespeed" => [:build, :test]
-    depends_on "curl"
-    depends_on "gettext"
-    depends_on "glib"
-    depends_on "icu4c"
-    depends_on "gmp"
-    depends_on "jpeg"
-    depends_on "libpng"
-    depends_on "libpq"
-    depends_on "libzip"
-    depends_on "openssl"
-    depends_on "pcre"
-    depends_on "sqlite"
-    depends_on "webp"
+    ## Resources
+    resource "additional_files" do
+        url "https://www.litespeedtech.com/packages/lsapi/php-litespeed-7.1.tgz"
+        sha256 "540209b98139c1613f4bb5331d96ced01f53b97aa5f5fc11c03804c447ef27ab"
+      end
 
     def install
         config_path = etc/"lsphp/admin/#{php_version}"
@@ -35,51 +24,21 @@ class AdminPhp < Formula
 
         args = %W[
             --prefix=#{prefix}
-            --localstatedir=#{var}
-            --sysconfdir=#{config_path}
-            --with-config-file-path=#{config_path}
-            --with-config-file-scan-dir=#{config_path}/conf.d
-            --with-pear=#{pkgshare}/pear
+            --disable-all
             --with-litespeed
-            --enable-exif
-            --enable-ftp
-            --enable-intl
-            --enable-mbregex
-            --enable-mbstring
-            --enable-mysqlnd
             --enable-zip
             --with-libzip
             --with-bz2
-            --with-icu-dir=#{Formula["icu4c"].opt_prefix}
-            --with-mysqli=mysqlnd
-            --with-openssl=#{Formula["openssl"].opt_prefix}
-            --with-pdo-mysql=mysqlnd
-            --with-pdo-pgsql=#{Formula["libpq"].opt_prefix}
-            --with-pdo-sqlite=#{Formula["sqlite"].opt_prefix}
-            --with-pic
-            --with-gd
-            --with-gmp=#{Formula["gmp"].opt_prefix}
-            --with-png-dir=#{Formula["libpng"].opt_prefix}
-            --with-webp-dir=#{Formula["webp"].opt_prefix}
-            --with-gettext=#{Formula["gettext"].opt_prefix}
-            --with-pgsql=#{Formula["libpq"].opt_prefix}
-            --with-sqlite3=#{Formula["sqlite"].opt_prefix}
-            --with-curl
-            --with-icon
-            --with-xmlrpc
+            --enable-xml
+            --enable-json
+            --enable-sockets
+            --enable-session
+            --enable-posix
             --with-zlib
+            --enable-bcmath
+            --with-libexpat-dir=#{Formula["expat"].opt_prefix}
         ]
-
-        ./configure --prefix=/tmp --disable-all
-        --with-litespeed
-        --enable-session
-        --enable-posix
-        --enable-xml
-        --with-libexpat-dir=/usr
-        --with-zlib
-        --enable-sockets
-        --enable-bcmath
-        --enable-json
+        
 
         system "./configure", *args
         system "make"
