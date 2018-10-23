@@ -18,6 +18,7 @@ class Openlitespeed < Formula
         sha256 "2b65098675f5bdca74e7915a701235c80bce7aeed5c99c8f346d865e108ac831" => :high_sierra
     end
 
+    depends_on "puleeno/openlitespeed/admin_php"
     depends_on "pcre"
     depends_on "expat"
     depends_on "openssl"
@@ -41,9 +42,16 @@ class Openlitespeed < Formula
         args = %W[
             --prefix=#{prefix}
             --sysconfdir=#{etc}/#{name}
-            --with-openssl=#{Formula["openssl"].opt_prefix}
             --with-user=#{get_user}
-            --with-group=staff
+            --with-group=admin
+
+            --with-libdir=#{HOMEBREW_PREFIX}/lib
+            --with-zlib=#{Formula["zlib"].opt_prefix}
+            --with-openssl=#{Formula["openssl"].opt_prefix}
+            --with-pcre=#{Formula["pcre"].opt_prefix}
+            --with-udns=#{Formula["udns"].opt_prefix}
+            --with-expat=#{Formula["expat"].opt_prefix}
+
             CPPFLAGS=-I#{HOMEBREW_PREFIX}/include
             LDFLAGS=-L#{HOMEBREW_PREFIX}/lib
         ]
