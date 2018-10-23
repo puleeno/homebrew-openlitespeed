@@ -26,6 +26,7 @@ class Openlitespeed < Formula
     depends_on "libgeoip"
     depends_on "zlib"
     depends_on "udns"
+    depends_on "sqlite"
     depends_on "luajit" => :optional
 
     def install
@@ -65,6 +66,11 @@ class Openlitespeed < Formula
         # Install
         system "make"
         system "make", "install"
+
+        # Create Admin_Php Symlink
+        ln_sf "#{Formula["admin_php"].bin}/lsphp", "#{prefix}/admin/fcgi-bin/admin_php"
+        ln_sf "#{Formula["admin_php"].bin}/lsphp", "#{prefix}/fcgi-bin/lsphp"
+        ln_sf "#{Formula["admin_php"].bin}/lsphp", "#{prefix}/fcgi-bin/lsphp5"
 
         # Replace relative path by absolute path for Openlitespeed binary
         inreplace "#{bin}/lswsctrl.open", "$BASE_DIR/..", "#{prefix}"
