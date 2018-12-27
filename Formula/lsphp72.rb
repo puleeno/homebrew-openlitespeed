@@ -14,14 +14,8 @@ class Lsphp72 < Formula
   
     depends_on "puleeno/openlitespeed/openlitespeed" => [:build, :test]
     depends_on "pkg-config" => :build
-    depends_on "apr"
-    depends_on "apr-util"
-    depends_on "argon2"
-    depends_on "aspell"
     depends_on "autoconf"
-    depends_on "curl-openssl"
-    depends_on "freetds"
-    depends_on "freetype"
+    depends_on "curl"
     depends_on "gettext"
     depends_on "glib"
     depends_on "libiconv" if DevelopmentTools.clang_build_version >= 1000
@@ -30,13 +24,10 @@ class Lsphp72 < Formula
     depends_on "jpeg"
     depends_on "libpng"
     depends_on "libpq"
-    depends_on "libsodium"
     depends_on "libzip"
-    depends_on "openldap"
     depends_on "openssl"
     depends_on "pcre"
     depends_on "sqlite"
-    depends_on "unixodbc"
     depends_on "webp"
   
     # PHP build system incorrectly links system libraries
@@ -87,17 +78,14 @@ class Lsphp72 < Formula
         --enable-mbstring
         --enable-mysqlnd
         --enable-pcntl
-        --enable-shmop
         --enable-soap
         --enable-sockets
         --enable-sysvmsg
         --enable-sysvsem
         --enable-sysvshm
-        --enable-wddx
         --enable-zip
         --with-bz2#{headers_path}
         --with-curl=#{Formula["curl-openssl"].opt_prefix}
-        --with-freetype-dir=#{Formula["freetype"].opt_prefix}
         --with-gd
         --with-gettext=#{Formula["gettext"].opt_prefix}
         --with-gmp=#{Formula["gmp"].opt_prefix}
@@ -106,8 +94,6 @@ class Lsphp72 < Formula
         --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
         --with-kerberos#{headers_path}
         --with-layout=GNU
-        --with-ldap=#{Formula["openldap"].opt_prefix}
-        --with-ldap-sasl#{headers_path}
         --with-libxml-dir#{headers_path}
         --with-libedit#{headers_path}
         --with-libzip
@@ -116,8 +102,6 @@ class Lsphp72 < Formula
         --with-mysqli=mysqlnd
         --with-ndbm#{headers_path}
         --with-openssl=#{Formula["openssl"].opt_prefix}
-        --with-password-argon2=#{Formula["argon2"].opt_prefix}
-        --with-pdo-dblib=#{Formula["freetds"].opt_prefix}
         --with-pdo-mysql=mysqlnd
         --with-pdo-odbc=unixODBC,#{Formula["unixodbc"].opt_prefix}
         --with-pdo-pgsql=#{Formula["libpq"].opt_prefix}
@@ -125,10 +109,7 @@ class Lsphp72 < Formula
         --with-pgsql=#{Formula["libpq"].opt_prefix}
         --with-pic
         --with-png-dir=#{Formula["libpng"].opt_prefix}
-        --with-pspell=#{Formula["aspell"].opt_prefix}
-        --with-sodium=#{Formula["libsodium"].opt_prefix}
         --with-sqlite3=#{Formula["sqlite"].opt_prefix}
-        --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
         --with-webp-dir=#{Formula["webp"].opt_prefix}
         --with-xmlrpc
         --with-xsl#{headers_path}
@@ -163,5 +144,4 @@ class Lsphp72 < Formula
     def php_version
       version.to_s.split(".")[0..1].join(".")
     end
-  
   end
