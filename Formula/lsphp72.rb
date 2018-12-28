@@ -18,7 +18,6 @@ class Lsphp72 < Formula
     depends_on "curl"
     depends_on "gettext"
     depends_on "glib"
-    depends_on "libiconv" if DevelopmentTools.clang_build_version >= 1000
     depends_on "gmp"
     depends_on "icu4c"
     depends_on "jpeg"
@@ -30,20 +29,8 @@ class Lsphp72 < Formula
     depends_on "sqlite"
     depends_on "webp"
   
-    # PHP build system incorrectly links system libraries
-    # see https://github.com/php/php-src/pull/3472
-    patch :DATA
-  
-    needs :cxx11
-  
     def install
-      # Ensure that libxml2 will be detected correctly in older MacOS
-      if MacOS.version == :el_capitan || MacOS.version == :sierra
-        ENV["SDKROOT"] = MacOS.sdk_path
-      end
   
-      # buildconf required due to system library linking bug patch
-      system "./buildconf", "--force"
 
       # compile a thread safe version of PHP and therefore it is not
       ENV.cxx11
@@ -51,9 +38,6 @@ class Lsphp72 < Formula
       config_path = etc/"lsphp/#{php_version}"
       # Prevent system pear config from inhibiting pear install
       (config_path/"pear.conf").delete if (config_path/"pear.conf").exist?
-  
-      # Prevent homebrew from harcoding path to sed shim in phpize script
-      ENV["lt_cv_path_SED"] = "sed"
   
       # Each extension that is built on Mojave needs a direct reference to the
       # sdk path or it won't find the headers
@@ -89,7 +73,6 @@ class Lsphp72 < Formula
         --with-gd
         --with-gettext=#{Formula["gettext"].opt_prefix}
         --with-gmp=#{Formula["gmp"].opt_prefix}
-        --with-iconv#{headers_path}
         --with-icu-dir=#{Formula["icu4c"].opt_prefix}
         --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
         --with-kerberos#{headers_path}
@@ -115,31 +98,17 @@ class Lsphp72 < Formula
         --with-xsl#{headers_path}
         --with-zlib#{headers_path}
       ]
-
-      if MacOS.sdk_path_if_needed
-        args << "--with-iconv=#{Formula["libiconv"].opt_prefix}"
-      end
-
-  
       system "./configure", *args
       system "make"
       system "make", "install"
-  
-      # Allow pecl to install outside of Cellar
-      extension_dir = Utils.popen_read("#{bin}/php-config --extension-dir").chomp
-      orig_ext_dir = File.basename(extension_dir)
-      inreplace bin/"php-config", lib/"lsphp", prefix/"pecl"
-      inreplace "php.ini-development", %r{; ?extension_dir = "\./"},
-        "extension_dir = \"#{HOMEBREW_PREFIX}/lib/lsphp/pecl/#{orig_ext_dir}\""
-  
+      
       config_files = {
         "php.ini-development"   => "php.ini",
       }
       config_files.each_value do |dst|
         dst_default = config_path/"#{dst}.default"
         rm dst_default if dst_default.exist?
-      end
-    end
+      end    end
   
     def php_version
       version.to_s.split(".")[0..1].join(".")
