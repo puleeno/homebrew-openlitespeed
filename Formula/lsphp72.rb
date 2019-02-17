@@ -34,7 +34,7 @@ class Lsphp72 < Formula
   depends_on "webp"
 
   # PHP build system incorrectly links system libraries
-  # see https://github.com/lsphp/php-src/pull/3472
+  # see https://github.com/php/php-src/pull/3472
   patch :DATA
 
   def install
