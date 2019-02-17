@@ -31,11 +31,15 @@ class AdminPhp < Formula
             --enable-posix
             --enable-bcmath
             --with-libzip
+            --enable-mysqlnd
             --with-bz2#{headers_path}
             --with-zlib=#{Formula["zlib"].opt_prefix}
             --with-openssl=#{Formula["openssl"].opt_prefix}
             --with-sqlite3=#{Formula["sqlite"].opt_prefix}
             --with-libexpat-dir=#{Formula["expat"].opt_prefix}
+            --with-mysql-sock=/tmp/mysql.sock
+            --with-mysqli=mysqlnd
+            --with-pdo-mysql=mysqlnd
         ]
 
 
