@@ -6,28 +6,12 @@ class AdminPhp < Formula
 
   keg_only :versioned_formula
   depends_on "pkg-config" => :build
-  depends_on "apr"
-  depends_on "apr-util"
-  depends_on "argon2"
-  depends_on "aspell"
   depends_on "autoconf"
-  depends_on "curl-openssl"
-  depends_on "freetype"
-  depends_on "gettext"
-  depends_on "glib"
-  depends_on "gmp"
-  depends_on "icu4c"
-  depends_on "jpeg"
-  depends_on "libpng"
-  depends_on "libpq"
-  depends_on "libsodium"
-  depends_on "libzip"
-  depends_on "openldap"
+  depends_on "expat"
+  depends_on "libxml2"
   depends_on "openssl"
-  depends_on "pcre"
-  depends_on "sqlite"
-  depends_on "tidy-html5"
-  depends_on "webp"
+  depends_on "zlib"
+  depends_on "libzip"
 
   # PHP build system incorrectly links system libraries
   # see https://github.com/php/php-src/pull/3472
@@ -59,155 +43,30 @@ class AdminPhp < Formula
 
     args = %W[
       --prefix=#{prefix}
-      --localstatedir=#{var}
-      --sysconfdir=#{config_path}
-      --with-config-file-path=#{config_path}
-      --with-config-file-scan-dir=#{config_path}/conf.d
-      --with-pear=#{pkgshare}/pear
+      --disable-all
       --with-litespeed
-      --enable-bcmath
-      --enable-calendar
-      --enable-dba
-      --enable-dtrace
-      --enable-exif
-      --enable-ftp
-      --enable-intl
-      --enable-mbregex
-      --enable-mbstring
-      --enable-mysqlnd
-      --enable-opcache-file
-      --enable-pcntl
-      --enable-phpdbg
-      --enable-phpdbg-webhelper
-      --enable-shmop
-      --enable-soap
-      --enable-sockets
-      --enable-sysvmsg
-      --enable-sysvsem
-      --enable-sysvshm
-      --enable-wddx
       --enable-zip
-      --with-bz2#{headers_path}
-      --with-curl=#{Formula["curl-openssl"].opt_prefix}
-      --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
-      --with-gettext=#{Formula["gettext"].opt_prefix}
-      --with-gmp=#{Formula["gmp"].opt_prefix}
-      --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
-      --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
-      --with-kerberos#{headers_path}
-      --with-layout=GNU
-      --with-ldap=#{Formula["openldap"].opt_prefix}
-      --with-ldap-sasl#{headers_path}
-      --with-libxml-dir#{headers_path}
-      --with-libedit#{headers_path}
+      --enable-xml
+      --enable-json
+      --enable-sockets
+      --enable-session
+      --enable-posix
+      --enable-bcmath
       --with-libzip
-      --with-mhash#{headers_path}
+      --enable-mysqlnd
+      --enable-pdo
+      --with-bz2#{headers_path}
+      --with-zlib=#{Formula["zlib"].opt_prefix}
+      --with-openssl=#{Formula["openssl"].opt_prefix}
+      --with-sqlite3=#{Formula["sqlite"].opt_prefix}
+      --with-libexpat-dir=#{Formula["expat"].opt_prefix}
       --with-mysql-sock=/tmp/mysql.sock
       --with-mysqli=mysqlnd
-      --with-ndbm#{headers_path}
-      --with-openssl=#{Formula["openssl"].opt_prefix}
-      --with-password-argon2=#{Formula["argon2"].opt_prefix}
       --with-pdo-mysql=mysqlnd
-      --with-pdo-pgsql=#{Formula["libpq"].opt_prefix}
-      --with-pdo-sqlite=#{Formula["sqlite"].opt_prefix}
-      --with-pgsql=#{Formula["libpq"].opt_prefix}
-      --with-pic
-      --with-png-dir=#{Formula["libpng"].opt_prefix}
-      --with-pspell=#{Formula["aspell"].opt_prefix}
-      --with-sodium=#{Formula["libsodium"].opt_prefix}
-      --with-sqlite3=#{Formula["sqlite"].opt_prefix}
-      --with-tidy=#{Formula["tidy-html5"].opt_prefix}
-      --with-webp-dir=#{Formula["webp"].opt_prefix}
-      --with-xmlrpc
-      --with-xsl#{headers_path}
-      --with-zlib#{headers_path}
     ]
     system "./configure", *args
     system "make"
     system "make", "install"
-
-    # Allow pecl to install outside of Cellar
-    extension_dir = Utils.popen_read("#{bin}/php-config --extension-dir").chomp
-    orig_ext_dir = File.basename(extension_dir)
-    inreplace bin/"php-config", lib/"php", prefix/"pecl"
-    inreplace "php.ini-development", %r{; ?extension_dir = "\./"},
-      "extension_dir = \"#{HOMEBREW_PREFIX}/lib/admin_php/pecl/#{orig_ext_dir}\""
-
-    config_files = {
-      "php.ini-development"   => "php.ini",
-    }
-    config_files.each_value do |dst|
-      dst_default = config_path/"#{dst}.default"
-      rm dst_default if dst_default.exist?
-    end
-    config_path.install config_files
-  end
-
-  def post_install
-    pear_prefix = pkgshare/"pear"
-    pear_files = %W[
-      #{pear_prefix}/.depdblock
-      #{pear_prefix}/.filemap
-      #{pear_prefix}/.depdb
-      #{pear_prefix}/.lock
-    ]
-
-    %W[
-      #{pear_prefix}/.channels
-      #{pear_prefix}/.channels/.alias
-    ].each do |f|
-      chmod 0755, f
-      pear_files.concat(Dir["#{f}/*"])
-    end
-
-    chmod 0644, pear_files
-
-    # Custom location for extensions installed via pecl
-    pecl_path = HOMEBREW_PREFIX/"lib/admin_php/pecl"
-    ln_s pecl_path, prefix/"pecl" unless (prefix/"pecl").exist?
-    extension_dir = Utils.popen_read("#{bin}/php-config --extension-dir").chomp
-    php_basename = File.basename(extension_dir)
-    php_ext_dir = opt_prefix/"lib/php"/php_basename
-
-    # fix pear config to install outside cellar
-    pear_path = HOMEBREW_PREFIX/"share/pear@#{php_version}"
-    cp_r pkgshare/"pear/.", pear_path
-    {
-      "php_ini"  => etc/"admin_php/#{php_version}/php.ini",
-      "php_dir"  => pear_path,
-      "doc_dir"  => pear_path/"doc",
-      "ext_dir"  => pecl_path/php_basename,
-      "bin_dir"  => opt_bin,
-      "data_dir" => pear_path/"data",
-      "cfg_dir"  => pear_path/"cfg",
-      "www_dir"  => pear_path/"htdocs",
-      "man_dir"  => HOMEBREW_PREFIX/"share/man",
-      "test_dir" => pear_path/"test",
-      "php_bin"  => opt_bin/"php",
-    }.each do |key, value|
-      value.mkpath if key =~ /(?<!bin|man)_dir$/
-      system bin/"pear", "config-set", key, value, "system"
-    end
-
-    system bin/"pear", "update-channels"
-
-    %w[
-      opcache
-    ].each do |e|
-      ext_config_path = etc/"admin_php/#{php_version}/conf.d/ext-#{e}.ini"
-      extension_type = (e == "opcache") ? "zend_extension" : "extension"
-      if ext_config_path.exist?
-        inreplace ext_config_path,
-          /#{extension_type}=.*$/, "#{extension_type}=#{php_ext_dir}/#{e}.so"
-      else
-        ext_config_path.write <<~EOS
-          [#{e}]
-          #{extension_type}="#{php_ext_dir}/#{e}.so"
-        EOS
-      end
-    end
   end
 
   def php_version
