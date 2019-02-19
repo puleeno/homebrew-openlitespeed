@@ -76,10 +76,11 @@ class Openlitespeed < Formula
         inreplace "#{bin}/lswsctrl.open", "$BASE_DIR/..", "#{prefix}"
         inreplace "#{bin}/lswsctrl.open", "$BASE_DIR\"/\"..", "#{prefix}"
         inreplace "#{bin}/lswsctrl.open", "\.\/", "#{bin}\/"
+        `echo "admin:#{`#{Formula["admin_php"].bin}/lsphp -q #{prefix}/admin/misc/htpasswd.php 123456`}" > #{prefix}/admin/conf/htpasswd`
     end
 
     def plist; <<~EOS
-    <?xml version="1.0" encoding="UTF-8"?>
+    <?xml version=1.0" encoding="UTF-8"?>
     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
     <plist version="1.0">
         <dict>
