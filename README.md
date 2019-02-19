@@ -36,10 +36,10 @@ List PHP version supports
 - [ ] lsphp53
 - [ ] lsphp54
 - [ ] lsphp55
-- [ ] lsphp56
+- [x] lsphp56
 - [ ] lsphp70
 - [ ] lsphp71
-- [ ] lsphp72
+- [x] lsphp72
 - [ ] lsphp73
 
 
@@ -48,3 +48,11 @@ List PHP version supports
 ```
 brew install lsphp72
 ```
+# Bug reports
+If you have any issue please send me via [Github Issue](https://github.com/puleeno/homebrew-openlitespeed/issues)
+
+# Donate
+If this project help you reduce time to develop, you can give me a cup of coffee :)
+
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](puleeno@gmail.com)
