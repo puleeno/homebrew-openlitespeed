@@ -18,6 +18,11 @@ You can start Openlitespeed Service via brew services manager
 brew services start openlitespeed
 ```
 
+If you use port 80 for Listener please run brew service with *sudo* user
+```
+sudo brew services start openlitespeed
+```
+
 # Litespeed WebAdmin
 URL: https://localhost:7080
 
