@@ -1,15 +1,14 @@
-class Lsphp71 < Formula
+class Php < Formula
     desc "General-purpose scripting language"
     homepage "https://secure.php.net/"
-    url "https://php.net/get/php-7.1.25.tar.xz/from/this/mirror"
-    sha256 "0fd8dad1903cd0b2d615a1fe4209f99e53b7292403c8ffa1919c0f4dd1eada88"
-
-    keg_only :versioned_formula
+    url "https://php.net/get/php-7.3.2.tar.xz/from/this/mirror"
+    sha256 "010b868b4456644ae227d05ad236c8b0a1f57dc6320e7e5ad75e86c5baf0a9a8"
 
     depends_on "puleeno/openlitespeed/openlitespeed" => [:build]
     depends_on "pkg-config" => :build
     depends_on "apr"
     depends_on "apr-util"
+    depends_on "argon2"
     depends_on "aspell"
     depends_on "autoconf"
     depends_on "curl-openssl"
@@ -22,12 +21,10 @@ class Lsphp71 < Formula
     depends_on "jpeg"
     depends_on "libpng"
     depends_on "libpq"
-    depends_on "libtool"
+    depends_on "libsodium"
     depends_on "libzip"
-    depends_on "mcrypt"
     depends_on "openldap"
     depends_on "openssl"
-    depends_on "pcre"
     depends_on "sqlite"
     depends_on "tidy-html5"
     depends_on "unixodbc"
@@ -67,7 +64,7 @@ class Lsphp71 < Formula
         --with-config-file-path=#{config_path}
         --with-config-file-scan-dir=#{config_path}/conf.d
         --with-pear=#{pkgshare}/pear
-        -- width-litespeed
+        --with-litespeed
         --enable-bcmath
         --enable-calendar
         --enable-dba
@@ -104,15 +101,15 @@ class Lsphp71 < Formula
         --with-layout=GNU
         --with-ldap=#{Formula["openldap"].opt_prefix}
         --with-ldap-sasl#{headers_path}
-        --with-libedit#{headers_path}
         --with-libxml-dir#{headers_path}
+        --with-libedit#{headers_path}
         --with-libzip
-        --with-mcrypt=#{Formula["mcrypt"].opt_prefix}
         --with-mhash#{headers_path}
         --with-mysql-sock=/tmp/mysql.sock
         --with-mysqli=mysqlnd
         --with-ndbm#{headers_path}
         --with-openssl=#{Formula["openssl"].opt_prefix}
+        --with-password-argon2=#{Formula["argon2"].opt_prefix}
         --with-pdo-dblib=#{Formula["freetds"].opt_prefix}
         --with-pdo-mysql=mysqlnd
         --with-pdo-odbc=unixODBC,#{Formula["unixodbc"].opt_prefix}
@@ -122,6 +119,7 @@ class Lsphp71 < Formula
         --with-pic
         --with-png-dir=#{Formula["libpng"].opt_prefix}
         --with-pspell=#{Formula["aspell"].opt_prefix}
+        --with-sodium=#{Formula["libsodium"].opt_prefix}
         --with-sqlite3=#{Formula["sqlite"].opt_prefix}
         --with-tidy=#{Formula["tidy-html5"].opt_prefix}
         --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
@@ -150,6 +148,11 @@ class Lsphp71 < Formula
         rm dst_default if dst_default.exist?
       end
       config_path.install config_files
+
+      unless (var/"log/php-fpm.log").exist?
+        (var/"log").mkpath
+        touch var/"log/php-fpm.log"
+      end
     end
 
     def post_install
@@ -179,7 +182,7 @@ class Lsphp71 < Formula
       php_ext_dir = opt_prefix/"lib/php"/php_basename
 
       # fix pear config to install outside cellar
-      pear_path = HOMEBREW_PREFIX/"share/pear@#{php_version}"
+      pear_path = HOMEBREW_PREFIX/"share/pear"
       cp_r pkgshare/"pear/.", pear_path
       {
         "php_ini"  => etc/"lsphp/#{php_version}/php.ini",
@@ -220,6 +223,7 @@ class Lsphp71 < Formula
     def php_version
       version.to_s.split(".")[0..1].join(".")
     end
+  end
 
   __END__
   diff --git a/acinclude.m4 b/acinclude.m4
