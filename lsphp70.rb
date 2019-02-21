@@ -1,14 +1,14 @@
-class PhpAT56 < Formula
+class PhpAT70 < Formula
     desc "General-purpose scripting language"
     homepage "https://secure.php.net/"
-    url "https://php.net/get/php-5.6.38.tar.xz/from/this/mirror"
-    sha256 "c2fac47dc6316bd230f0ea91d8a5498af122fb6a3eb43f796c9ea5f59b04aa1e"
+    url "https://php.net/get/php-7.0.32.tar.xz/from/this/mirror"
+    sha256 "ff6f62afeb32c71b3b89ecbd42950ef6c5e0c329cc6e1c58ffac47e6f1f883c4"
   
     bottle do
-      sha256 "23b269d96aad130be31c631a318c2e2bceb06b26b3b79dc0a1ab4c795fb360b5" => :mojave
-      sha256 "77511149c69ad593596bf9185003f58b58278c7af8beb47d3b5c2df205a6debf" => :high_sierra
-      sha256 "4be88bb510b67dcab62c94e4fd40a6290c89f1115bf3905743ec6293e6b2d530" => :sierra
-      sha256 "e6d257ad289c40a7fff33feecdfe6f8cef736d20e861080fba8c685d4e21bf48" => :el_capitan
+      sha256 "aa3f649b2495c9c76ea294b40810c8ad0c4eb24496776aa2356ead2e7cb85e4d" => :mojave
+      sha256 "9236f35ab82425be2754016c48956f301efec81a3cd3690c78f09c32b195e738" => :high_sierra
+      sha256 "04a6f5dbbdfa7c4766beccbf6b5245c1f8e642d679979e8aea2524350b339aac" => :sierra
+      sha256 "690b3803acd2d68d50f47ee14cb56e77a890a0532836b5ac58a71b666b8c7cd1" => :el_capitan
     end
   
     keg_only :versioned_formula
@@ -30,6 +30,7 @@ class PhpAT56 < Formula
     depends_on "libiconv" if DevelopmentTools.clang_build_version >= 1000
     depends_on "libpng"
     depends_on "libpq"
+    depends_on "libtool"
     depends_on "libzip"
     depends_on "mcrypt"
     depends_on "openldap" if DevelopmentTools.clang_build_version >= 1000
@@ -105,6 +106,7 @@ class PhpAT56 < Formula
         --enable-bcmath
         --enable-calendar
         --enable-dba
+        --enable-dtrace
         --enable-exif
         --enable-ftp
         --enable-fpm
@@ -136,6 +138,7 @@ class PhpAT56 < Formula
         --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
         --with-kerberos#{headers_path}
         --with-layout=GNU
+        --with-ldap
         --with-ldap-sasl#{headers_path}
         --with-libedit#{headers_path}
         --with-libxml-dir#{headers_path}
@@ -144,7 +147,6 @@ class PhpAT56 < Formula
         --with-mhash#{headers_path}
         --with-mysql-sock=/tmp/mysql.sock
         --with-mysqli=mysqlnd
-        --with-mysql=mysqlnd
         --with-ndbm#{headers_path}
         --with-openssl=#{Formula["openssl"].opt_prefix}
         --with-pdo-dblib=#{Formula["freetds"].opt_prefix}
@@ -189,6 +191,7 @@ class PhpAT56 < Formula
       config_files = {
         "php.ini-development" => "php.ini",
         "sapi/fpm/php-fpm.conf" => "php-fpm.conf",
+        "sapi/fpm/www.conf" => "php-fpm.d/www.conf",
       }
       config_files.each_value do |dst|
         dst_default = config_path/"#{dst}.default"
@@ -270,15 +273,12 @@ class PhpAT56 < Formula
     def caveats
       <<~EOS
         To enable PHP in Apache add the following to httpd.conf and restart Apache:
-            LoadModule php5_module #{opt_lib}/httpd/modules/libphp5.so
-  
+            LoadModule php7_module #{opt_lib}/httpd/modules/libphp7.so
             <FilesMatch \\.php$>
                 SetHandler application/x-httpd-php
             </FilesMatch>
-  
         Finally, check DirectoryIndex includes index.php
             DirectoryIndex index.php index.html
-  
         The php.ini and php-fpm.ini file can be found in:
             #{etc}/php/#{php_version}/
       EOS
@@ -358,7 +358,7 @@ class PhpAT56 < Formula
         (testpath/"httpd.conf").write <<~EOS
           #{main_config}
           LoadModule mpm_prefork_module lib/httpd/modules/mod_mpm_prefork.so
-          LoadModule php5_module #{lib}/httpd/modules/libphp5.so
+          LoadModule php7_module #{lib}/httpd/modules/libphp7.so
           <FilesMatch \\.(php|phar)$>
             SetHandler application/x-httpd-php
           </FilesMatch>
