@@ -43,9 +43,9 @@ List PHP version supports
 - [ ] lsphp55
 - [x] lsphp56
 - [ ] lsphp70
-- [ ] lsphp71
+- [x] lsphp71
 - [x] lsphp72
-- [ ] lsphp73
+- [x] lsphp73
 
 
 **E.g: Litespeed PHP version 7.2**
