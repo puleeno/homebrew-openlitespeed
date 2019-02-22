@@ -30,7 +30,6 @@ class Lsphp56 < Formula
   depends_on "openssl"
   depends_on "pcre"
   depends_on "sqlite"
-  depends_on "tidy-html5"
   depends_on "unixodbc"
   depends_on "webp"
 
@@ -50,6 +49,11 @@ class Lsphp56 < Formula
 
     # Required due to icu4c dependency
     ENV.cxx11
+
+    ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
+    ENV.append "CFLAGS", "-arch x86_64"
+    ENV.append "CXXFLAGS", "-arch x86_64"
+    ENV.append "LDFLAGS", "-arch x86_64"
 
     config_path = etc/"lsphp/#{php_version}"
     # Prevent system pear config from inhibiting pear install
@@ -126,7 +130,6 @@ class Lsphp56 < Formula
       --with-pspell=#{Formula["aspell"].opt_prefix}
       --with-sodium=#{Formula["libsodium"].opt_prefix}
       --with-sqlite3=#{Formula["sqlite"].opt_prefix}
-      --with-tidy=#{Formula["tidy-html5"].opt_prefix}
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-webp-dir=#{Formula["webp"].opt_prefix}
       --with-xmlrpc
