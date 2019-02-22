@@ -51,9 +51,6 @@ class Lsphp56 < Formula
     ENV.cxx11
 
     ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
-    ENV.append "CFLAGS", "-arch x86_64"
-    ENV.append "CXXFLAGS", "-arch x86_64"
-    ENV.append "LDFLAGS", "-arch x86_64"
 
     config_path = etc/"lsphp/#{php_version}"
     # Prevent system pear config from inhibiting pear install
