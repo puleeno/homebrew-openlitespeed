@@ -6,7 +6,7 @@ class Openlitespeed < Formula
     url "https://openlitespeed.org/packages/openlitespeed-1.4.41.src.tgz"
     sha256 "ce5f82f4b048f7075bdc55723959924c00cda958a928c592fb129ba84b32f741"
     head "https://github.com/litespeedtech/openlitespeed.git"
-    version "1.4.42"
+    version "1.4.41"
 
     option "with-luajit", "use liblua (located in directory DIR, if supplied) for compiling mod_lua module.  [default=no]"
     option "with-debug", "Enable debugging symbols (Debug is disabled by default)"
@@ -72,6 +72,20 @@ class Openlitespeed < Formula
         inreplace "#{bin}/lswsctrl.open", "$BASE_DIR\"/\"..", "#{prefix}"
         inreplace "#{bin}/lswsctrl.open", "\.\/", "#{bin}\/"
         `echo "admin:#{`#{Formula["admin_php"].bin}/lsphp -q #{prefix}/admin/misc/htpasswd.php 123456`}" > #{prefix}/admin/conf/htpasswd`
+    end
+
+    def post_install
+        litespeed_dirs = %W[
+            #{prefix}/logs
+            #{prefix}/admin/logs
+            #{prefix}/admin/cgid
+            #{prefix}/admin/tmp
+            #{prefix}/Example/logs
+        ]
+
+        litespeed_dirs.each do |d|
+            d.mkpath
+        end
     end
 
     def plist; <<~EOS
