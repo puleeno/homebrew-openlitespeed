@@ -13,11 +13,6 @@ class Openlitespeed < Formula
 
     option "without-http2", "Disable SPDY and http2 over HTTPS"
 
-    bottle do
-        root_url "https://dl.bintray.com/puleeno/openlitespeed"
-        sha256 "2b65098675f5bdca74e7915a701235c80bce7aeed5c99c8f346d865e108ac831" => :high_sierra
-    end
-
     depends_on "puleeno/openlitespeed/admin_php"
     depends_on "pcre"
     depends_on "expat"
