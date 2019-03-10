@@ -3,8 +3,8 @@ require "formula"
 class Openlitespeed < Formula
     desc "OpenLiteSpeed is a high-performance, lightweight, open source HTTP server developed and copyrighted by LiteSpeed Technologies. Users are free to download, use, distribute, and modify OpenLiteSpeed and its source code in accordance with the precepts of the GPLv3 license."
     homepage "https://openlitespeed.org/"
-    url "https://openlitespeed.org/packages/openlitespeed-1.4.42.src.tgz"
-    sha256 "6259de34adcbc5709ac24641ffff8610278a2c6865b0ae0299fa803f4b0654d6"
+    url "https://openlitespeed.org/packages/openlitespeed-1.4.41.src.tgz"
+    sha256 "ce5f82f4b048f7075bdc55723959924c00cda958a928c592fb129ba84b32f741"
     head "https://github.com/litespeedtech/openlitespeed.git"
     version "1.4.42"
 
