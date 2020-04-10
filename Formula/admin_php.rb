@@ -42,6 +42,9 @@ class AdminPhp < Formula
       system "./configure", *args
       system "make"
       system "make", "install"
+      system "mkdir", "#{prefix}/logs"
+      system "mkdir", "#{prefix}/admin/logs"
+      system "mkdir", "#{prefix}/Example/logs"
   end
 
   def php_version
