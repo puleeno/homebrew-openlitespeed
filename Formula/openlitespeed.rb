@@ -61,11 +61,6 @@ class Openlitespeed < Formula
         # Install
         system "make"
         system "make", "install"
-        
-        # Create OpenLitespeed directories
-        system "mkdir", "#{prefix}/logs"
-        system "mkdir", "#{prefix}/admin/logs"
-        system "mkdir", "#{prefix}/Example/logs"
 
         # Create Admin_Php Symlink
         ln_sf "#{Formula["admin_php"].bin}/lsphp", "#{prefix}/admin/fcgi-bin/admin_php"
