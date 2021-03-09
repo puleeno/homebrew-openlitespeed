@@ -5,7 +5,7 @@ class AdminPhp < Formula
 
   depends_on "expat"
   depends_on "libxml2"
-  depends_on "openssl"
+  depends_on "openssl@1.1"
   depends_on "zlib"
   depends_on "libzip"
 
@@ -33,7 +33,7 @@ class AdminPhp < Formula
           --with-libzip
           --with-bz2#{headers_path}
           --with-zlib=#{Formula["zlib"].opt_prefix}
-          --with-openssl=#{Formula["openssl"].opt_prefix}
+          --with-openssl=#{Formula["openssl@1.1"].opt_prefix}
           --with-sqlite3=#{Formula["sqlite"].opt_prefix}
           --with-libexpat-dir=#{Formula["expat"].opt_prefix}
       ]
