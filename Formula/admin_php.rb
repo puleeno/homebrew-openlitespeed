@@ -1,11 +1,27 @@
 class AdminPhp < Formula
-  homepage "https://secure.php.net"
-  url "https://secure.php.net/get/php-7.2.10.tar.xz/from/this/mirror"
-  sha256 "01c2154a3a8e3c0818acbdbc1a956832c828a0380ce6d1d14fea495ea21804f0"
+  desc "General-purpose scripting language"
+  homepage "https://www.php.net/"
+  # Should only be updated if the new version is announced on the homepage, https://www.php.net/
+  url "https://www.php.net/distributions/php-8.0.3.tar.xz"
+  mirror "https://fossies.org/linux/www/php-8.0.3.tar.xz"
+  sha256 "c9816aa9745a9695672951eaff3a35ca5eddcb9cacf87a4f04b9fb1169010251"
+  license "PHP-3.01"
+
+  livecheck do
+    url "https://www.php.net/releases/feed.php"
+    regex(/PHP (\d+(?:\.\d+)+) /i)
+  end
+
+  head do
+    url "https://github.com/php/php-src.git"
+
+    depends_on "bison" => :build # bison >= 3.0.0 required to generate parsers
+    depends_on "re2c" => :build # required to generate PHP lexers
+  end
 
   depends_on "expat"
   depends_on "libxml2"
-  depends_on "openssl@1.1"
+  depends_on "openssl"
   depends_on "zlib"
   depends_on "libzip"
 
@@ -33,7 +49,8 @@ class AdminPhp < Formula
           --with-libzip
           --with-bz2#{headers_path}
           --with-zlib=#{Formula["zlib"].opt_prefix}
-          --with-openssl=#{Formula["openssl@1.1"].opt_prefix}
+          --with-openssl
+          --with-libxml
           --with-sqlite3=#{Formula["sqlite"].opt_prefix}
           --with-libexpat-dir=#{Formula["expat"].opt_prefix}
       ]
