@@ -1,17 +1,27 @@
 class Lsphp73 < Formula
   desc "General-purpose scripting language"
-  homepage "https://secure.php.net/"
-  url "https://php.net/get/php-7.3.2.tar.xz/from/this/mirror"
-  sha256 "010b868b4456644ae227d05ad236c8b0a1f57dc6320e7e5ad75e86c5baf0a9a8"
+  homepage "https://www.php.net/"
+  # Should only be updated if the new version is announced on the homepage, https://www.php.net/
+  url "https://www.php.net/distributions/php-7.3.27.tar.xz"
+  mirror "https://fossies.org/linux/www/php-7.3.27.tar.xz"
+  sha256 "65f616e2d5b6faacedf62830fa047951b0136d5da34ae59e6744cbaf5dca148d"
+  license "PHP-3.01"
+  revision 1
+
+
+  keg_only :versioned_formula
+
+  deprecate! date: "2021-12-06", because: :versioned_formula
 
   depends_on "puleeno/openlitespeed/openlitespeed" => [:build]
   depends_on "pkg-config" => :build
+  depends_on "xz" => :build
   depends_on "apr"
   depends_on "apr-util"
   depends_on "argon2"
   depends_on "aspell"
   depends_on "autoconf"
-  depends_on "curl-openssl"
+  depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
   depends_on "gettext"
@@ -24,20 +34,28 @@ class Lsphp73 < Formula
   depends_on "libsodium"
   depends_on "libzip"
   depends_on "openldap"
-  depends_on "openssl"
+  depends_on "openssl@1.1"
   depends_on "sqlite"
   depends_on "tidy-html5"
   depends_on "unixodbc"
   depends_on "webp"
 
-  # PHP build system incorrectly links system libraries
-  # see https://github.com/php/php-src/pull/3472
-  patch :DATA
+  uses_from_macos "bzip2"
+  uses_from_macos "libedit"
+  uses_from_macos "libxml2"
+  uses_from_macos "libxslt"
+  uses_from_macos "zlib"
+
+  on_macos do
+    # PHP build system incorrectly links system libraries
+    # see https://github.com/php/php-src/pull/3472
+    patch :DATA
+  end
 
   def install
-    # Ensure that libxml2 will be detected correctly in older MacOS
-    if MacOS.version == :el_capitan || MacOS.version == :sierra
-      ENV["SDKROOT"] = MacOS.sdk_path
+    on_macos do
+      # Ensure that libxml2 will be detected correctly in older MacOS
+      ENV["SDKROOT"] = MacOS.sdk_path if MacOS.version == :el_capitan || MacOS.version == :sierra
     end
 
     # buildconf required due to system library linking bug patch
@@ -50,12 +68,15 @@ class Lsphp73 < Formula
     # Prevent system pear config from inhibiting pear install
     (config_path/"pear.conf").delete if (config_path/"pear.conf").exist?
 
-    # Prevent homebrew from harcoding path to sed shim in phpize script
+    # Prevent homebrew from hardcoding path to sed shim in phpize script
     ENV["lt_cv_path_SED"] = "sed"
 
     # Each extension that is built on Mojave needs a direct reference to the
     # sdk path or it won't find the headers
-    headers_path = "=#{MacOS.sdk_path_if_needed}/usr"
+    headers_path = ""
+    on_macos do
+      headers_path = "=#{MacOS.sdk_path_if_needed}/usr"
+    end
 
     args = %W[
       --prefix=#{prefix}
@@ -68,7 +89,6 @@ class Lsphp73 < Formula
       --enable-bcmath
       --enable-calendar
       --enable-dba
-      --enable-dtrace
       --enable-exif
       --enable-ftp
       --enable-intl
@@ -78,6 +98,7 @@ class Lsphp73 < Formula
       --enable-opcache-file
       --enable-pcntl
       --enable-phpdbg
+      --enable-phpdbg-readline
       --enable-phpdbg-webhelper
       --enable-shmop
       --enable-soap
@@ -87,8 +108,7 @@ class Lsphp73 < Formula
       --enable-sysvshm
       --enable-wddx
       --enable-zip
-      --with-bz2#{headers_path}
-      --with-curl=#{Formula["curl-openssl"].opt_prefix}
+      --with-curl=#{Formula["curl"].opt_prefix}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
       --with-gd
       --with-gettext=#{Formula["gettext"].opt_prefix}
@@ -99,15 +119,11 @@ class Lsphp73 < Formula
       --with-kerberos#{headers_path}
       --with-layout=GNU
       --with-ldap=#{Formula["openldap"].opt_prefix}
-      --with-ldap-sasl#{headers_path}
-      --with-libxml-dir#{headers_path}
-      --with-libedit#{headers_path}
       --with-libzip
       --with-mhash#{headers_path}
       --with-mysql-sock=/tmp/mysql.sock
       --with-mysqli=mysqlnd
-      --with-ndbm#{headers_path}
-      --with-openssl=#{Formula["openssl"].opt_prefix}
+      --with-openssl=#{Formula["openssl@1.1"].opt_prefix}
       --with-password-argon2=#{Formula["argon2"].opt_prefix}
       --with-pdo-dblib=#{Formula["freetds"].opt_prefix}
       --with-pdo-mysql=mysqlnd
@@ -124,20 +140,52 @@ class Lsphp73 < Formula
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-webp-dir=#{Formula["webp"].opt_prefix}
       --with-xmlrpc
-      --with-xsl#{headers_path}
-      --with-zlib#{headers_path}
     ]
+
+    on_macos do
+      args << "--enable-dtrace"
+      args << "--with-ldap-sasl#{headers_path}"
+      args << "--with-zlib#{headers_path}"
+      args << "--with-bz2#{headers_path}"
+      args << "--with-ndbm#{headers_path}"
+      args << "--with-libedit#{headers_path}"
+      args << "--with-libxml-dir#{headers_path}"
+      args << "--with-xsl#{headers_path}"
+    end
+    on_linux do
+      args << "--disable-dtrace"
+      args << "--with-zlib=#{Formula["zlib"].opt_prefix}"
+      args << "--with-bz2=#{Formula["bzip2"].opt_prefix}"
+      args << "--with-libedit=#{Formula["libedit"].opt_prefix}"
+      args << "--with-libxml-dir=#{Formula["libxml2"].opt_prefix}"
+      args << "--with-xsl=#{Formula["libxslt"].opt_prefix}"
+      args << "--without-ldap-sasl"
+      args << "--without-ndbm"
+      args << "--without-gdbm"
+    end
 
     system "./configure", *args
     system "make"
     system "make", "install"
 
     # Allow pecl to install outside of Cellar
-    extension_dir = Utils.popen_read("#{bin}/php-config --extension-dir").chomp
+    extension_dir = Utils.safe_popen_read("#{bin}/php-config", "--extension-dir").chomp
     orig_ext_dir = File.basename(extension_dir)
     inreplace bin/"php-config", lib/"php", prefix/"pecl"
     inreplace "php.ini-development", %r{; ?extension_dir = "\./"},
-      "extension_dir = \"#{HOMEBREW_PREFIX}/lib/lsphp/pecl/#{orig_ext_dir}\""
+      "extension_dir = \"#{HOMEBREW_PREFIX}/lib/php/pecl/#{orig_ext_dir}\""
+
+    # Use OpenSSL cert bundle
+    openssl = Formula["openssl@1.1"]
+    inreplace "php.ini-development", /; ?openssl\.cafile=/,
+      "openssl.cafile = \"#{openssl.pkgetc}/cert.pem\""
+    inreplace "php.ini-development", /; ?openssl\.capath=/,
+      "openssl.capath = \"#{openssl.pkgetc}/certs\""
+
+    # php 7.3 known bug
+    # SO discussion: https://stackoverflow.com/a/53709484/791609
+    # bug report: https://bugs.php.net/bug.php?id=77260
+    inreplace "php.ini-development", ";pcre.jit=1", "pcre.jit=0"
 
     config_files = {
       "php.ini-development"   => "php.ini",
@@ -169,17 +217,17 @@ class Lsphp73 < Formula
     chmod 0644, pear_files
 
     # Custom location for extensions installed via pecl
-    pecl_path = HOMEBREW_PREFIX/"lib/lsphp/pecl"
+    pecl_path = HOMEBREW_PREFIX/"lib/php/pecl"
     ln_s pecl_path, prefix/"pecl" unless (prefix/"pecl").exist?
-    extension_dir = Utils.popen_read("#{bin}/php-config --extension-dir").chomp
+    extension_dir = Utils.safe_popen_read("#{bin}/php-config", "--extension-dir").chomp
     php_basename = File.basename(extension_dir)
     php_ext_dir = opt_prefix/"lib/php"/php_basename
 
     # fix pear config to install outside cellar
-    pear_path = HOMEBREW_PREFIX/"share/pear"
+    pear_path = HOMEBREW_PREFIX/"share/pear@#{version.major_minor}"
     cp_r pkgshare/"pear/.", pear_path
     {
-      "php_ini"  => etc/"lsphp/#{php_version}/php.ini",
+      "php_ini"  => etc/"php/#{version.major_minor}/php.ini",
       "php_dir"  => pear_path,
       "doc_dir"  => pear_path/"doc",
       "ext_dir"  => pecl_path/php_basename,
@@ -191,7 +239,7 @@ class Lsphp73 < Formula
       "test_dir" => pear_path/"test",
       "php_bin"  => opt_bin/"php",
     }.each do |key, value|
-      value.mkpath if key =~ /(?<!bin|man)_dir$/
+      value.mkpath if /(?<!bin|man)_dir$/.match?(key)
       system bin/"pear", "config-set", key, value, "system"
     end
 
@@ -200,7 +248,7 @@ class Lsphp73 < Formula
     %w[
       opcache
     ].each do |e|
-      ext_config_path = etc/"lsphp/#{php_version}/conf.d/ext-#{e}.ini"
+      ext_config_path = etc/"php/#{version.major_minor}/conf.d/ext-#{e}.ini"
       extension_type = (e == "opcache") ? "zend_extension" : "extension"
       if ext_config_path.exist?
         inreplace ext_config_path,
