@@ -38,13 +38,7 @@ Default Openlitespeed for homebrew use admin_php belongs with WebAdmin has basic
 You can install other PHP version via this homebrew package.
 
 List PHP version supports
-- [ ] lsphp53
-- [ ] lsphp54
-- [ ] lsphp55
 - [x] lsphp56
-- [ ] lsphp70
-- [x] lsphp71
-- [x] lsphp72
 - [x] lsphp73
 
 
