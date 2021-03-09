@@ -50,6 +50,7 @@ class AdminPhp < Formula
           --with-bz2#{headers_path}
           --with-zlib=#{Formula["zlib"].opt_prefix}
           --with-openssl
+          --with-libxml
           --with-sqlite3=#{Formula["sqlite"].opt_prefix}
           --with-libexpat-dir=#{Formula["expat"].opt_prefix}
       ]
