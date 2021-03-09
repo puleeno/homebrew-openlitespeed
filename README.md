@@ -38,9 +38,9 @@ Default Openlitespeed for homebrew use admin_php belongs with WebAdmin has basic
 You can install other PHP version via this homebrew package.
 
 List PHP version supports
-- [x] lsphp56
+- [ ] lsphp56
 - [x] lsphp73
-- [x] lsphp80
+- [ ] lsphp80
 
 
 **E.g: Litespeed PHP version 8.0**
