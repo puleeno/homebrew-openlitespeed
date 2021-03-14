@@ -39,6 +39,7 @@ You can install other PHP version via this homebrew package.
 
 List PHP version supports
 - [ ] lsphp56
+- [x] lsphp72
 - [x] lsphp73
 - [ ] lsphp80
 
