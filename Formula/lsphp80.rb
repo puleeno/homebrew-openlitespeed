@@ -1,21 +1,26 @@
-class Lsphp73 < Formula
+class Lsphp80 < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
   # Should only be updated if the new version is announced on the homepage, https://www.php.net/
-  url "https://www.php.net/distributions/php-7.3.27.tar.xz"
-  mirror "https://fossies.org/linux/www/php-7.3.27.tar.xz"
-  sha256 "65f616e2d5b6faacedf62830fa047951b0136d5da34ae59e6744cbaf5dca148d"
+  url "https://www.php.net/distributions/php-8.0.3.tar.xz"
+  mirror "https://fossies.org/linux/www/php-8.0.3.tar.xz"
+  sha256 "c9816aa9745a9695672951eaff3a35ca5eddcb9cacf87a4f04b9fb1169010251"
   license "PHP-3.01"
-  revision 1
 
+  livecheck do
+    url "https://www.php.net/releases/feed.php"
+    regex(/PHP (\d+(?:\.\d+)+) /i)
+  end
 
-  keg_only :versioned_formula
+  head do
+    url "https://github.com/php/php-src.git"
 
-  deprecate! date: "2021-12-06", because: :versioned_formula
+    depends_on "bison" => :build # bison >= 3.0.0 required to generate parsers
+    depends_on "re2c" => :build # required to generate PHP lexers
+  end
 
   depends_on "puleeno/openlitespeed/openlitespeed" => [:build]
   depends_on "pkg-config" => :build
-  depends_on "xz" => :build
   depends_on "apr"
   depends_on "apr-util"
   depends_on "argon2"
@@ -23,23 +28,25 @@ class Lsphp73 < Formula
   depends_on "autoconf"
   depends_on "curl"
   depends_on "freetds"
-  depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "glib"
   depends_on "gmp"
   depends_on "icu4c"
-  depends_on "jpeg"
-  depends_on "libpng"
+  depends_on "krb5"
+  depends_on "libffi"
   depends_on "libpq"
   depends_on "libsodium"
   depends_on "libzip"
+  depends_on "oniguruma"
   depends_on "openldap"
   depends_on "openssl@1.1"
+  depends_on "pcre2"
   depends_on "sqlite"
   depends_on "tidy-html5"
   depends_on "unixodbc"
-  depends_on "webp"
 
+  uses_from_macos "xz" => :build
   uses_from_macos "bzip2"
   uses_from_macos "libedit"
   uses_from_macos "libxml2"
@@ -61,15 +68,25 @@ class Lsphp73 < Formula
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
-    # Required due to icu4c dependency
-    ENV.cxx11
 
-    config_path = etc/"lsphp/#{php_version}"
+    config_path = etc/"lsphp/#{version.major_minor}"
     # Prevent system pear config from inhibiting pear install
     (config_path/"pear.conf").delete if (config_path/"pear.conf").exist?
 
     # Prevent homebrew from hardcoding path to sed shim in phpize script
     ENV["lt_cv_path_SED"] = "sed"
+
+    # system pkg-config missing
+    ENV["KERBEROS_CFLAGS"] = " "
+    on_macos do
+      ENV["SASL_CFLAGS"] = "-I#{MacOS.sdk_path_if_needed}/usr/include/sasl"
+      ENV["SASL_LIBS"] = "-lsasl2"
+    end
+    on_linux do
+      ENV["SQLITE_CFLAGS"] = "-I#{Formula["sqlite"].opt_include}"
+      ENV["SQLITE_LIBS"] = "-lsqlite3"
+      ENV["BZIP_DIR"] = Formula["bzip2"].opt_prefix
+    end
 
     # Each extension that is built on Mojave needs a direct reference to the
     # sdk path or it won't find the headers
@@ -91,11 +108,11 @@ class Lsphp73 < Formula
       --enable-dba
       --enable-exif
       --enable-ftp
+      --enable-gd
       --enable-intl
       --enable-mbregex
       --enable-mbstring
       --enable-mysqlnd
-      --enable-opcache-file
       --enable-pcntl
       --enable-phpdbg
       --enable-phpdbg-readline
@@ -106,59 +123,50 @@ class Lsphp73 < Formula
       --enable-sysvmsg
       --enable-sysvsem
       --enable-sysvshm
-      --enable-wddx
-      --enable-zip
-      --with-curl=#{Formula["curl"].opt_prefix}
-      --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-bz2#{headers_path}
+      --with-curl
+      --with-external-gd
+      --with-external-pcre
+      --with-ffi
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
-      --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
-      --with-kerberos#{headers_path}
+      --with-kerberos
       --with-layout=GNU
       --with-ldap=#{Formula["openldap"].opt_prefix}
-      --with-libzip
+      --with-libxml
+      --with-libedit
       --with-mhash#{headers_path}
       --with-mysql-sock=/tmp/mysql.sock
       --with-mysqli=mysqlnd
-      --with-openssl=#{Formula["openssl@1.1"].opt_prefix}
+      --with-ndbm#{headers_path}
+      --with-openssl
       --with-password-argon2=#{Formula["argon2"].opt_prefix}
       --with-pdo-dblib=#{Formula["freetds"].opt_prefix}
       --with-pdo-mysql=mysqlnd
       --with-pdo-odbc=unixODBC,#{Formula["unixodbc"].opt_prefix}
       --with-pdo-pgsql=#{Formula["libpq"].opt_prefix}
-      --with-pdo-sqlite=#{Formula["sqlite"].opt_prefix}
+      --with-pdo-sqlite
       --with-pgsql=#{Formula["libpq"].opt_prefix}
       --with-pic
-      --with-png-dir=#{Formula["libpng"].opt_prefix}
       --with-pspell=#{Formula["aspell"].opt_prefix}
-      --with-sodium=#{Formula["libsodium"].opt_prefix}
-      --with-sqlite3=#{Formula["sqlite"].opt_prefix}
+      --with-sodium
+      --with-sqlite3
       --with-tidy=#{Formula["tidy-html5"].opt_prefix}
-      --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
-      --with-webp-dir=#{Formula["webp"].opt_prefix}
+      --with-unixODBC
       --with-xmlrpc
+      --with-xsl
+      --with-zip
+      --with-zlib
     ]
 
     on_macos do
       args << "--enable-dtrace"
-      args << "--with-ldap-sasl#{headers_path}"
-      args << "--with-zlib#{headers_path}"
-      args << "--with-bz2#{headers_path}"
-      args << "--with-ndbm#{headers_path}"
-      args << "--with-libedit#{headers_path}"
-      args << "--with-libxml-dir#{headers_path}"
-      args << "--with-xsl#{headers_path}"
+      args << "--with-ldap-sasl"
+      args << "--with-os-sdkpath=#{MacOS.sdk_path_if_needed}"
     end
     on_linux do
       args << "--disable-dtrace"
-      args << "--with-zlib=#{Formula["zlib"].opt_prefix}"
-      args << "--with-bz2=#{Formula["bzip2"].opt_prefix}"
-      args << "--with-libedit=#{Formula["libedit"].opt_prefix}"
-      args << "--with-libxml-dir=#{Formula["libxml2"].opt_prefix}"
-      args << "--with-xsl=#{Formula["libxslt"].opt_prefix}"
       args << "--without-ldap-sasl"
       args << "--without-ndbm"
       args << "--without-gdbm"
@@ -181,11 +189,6 @@ class Lsphp73 < Formula
       "openssl.cafile = \"#{openssl.pkgetc}/cert.pem\""
     inreplace "php.ini-development", /; ?openssl\.capath=/,
       "openssl.capath = \"#{openssl.pkgetc}/certs\""
-
-    # php 7.3 known bug
-    # SO discussion: https://stackoverflow.com/a/53709484/791609
-    # bug report: https://bugs.php.net/bug.php?id=77260
-    inreplace "php.ini-development", ";pcre.jit=1", "pcre.jit=0"
 
     config_files = {
       "php.ini-development"   => "php.ini",
@@ -224,10 +227,10 @@ class Lsphp73 < Formula
     php_ext_dir = opt_prefix/"lib/php"/php_basename
 
     # fix pear config to install outside cellar
-    pear_path = HOMEBREW_PREFIX/"share/pear@#{version.major_minor}"
+    pear_path = HOMEBREW_PREFIX/"share/pear"
     cp_r pkgshare/"pear/.", pear_path
     {
-      "php_ini"  => etc/"lsphp/#{version.major_minor}/php.ini",
+      "php_ini"  => etc/"php/#{version.major_minor}/php.ini",
       "php_dir"  => pear_path,
       "doc_dir"  => pear_path/"doc",
       "ext_dir"  => pecl_path/php_basename,
@@ -248,7 +251,7 @@ class Lsphp73 < Formula
     %w[
       opcache
     ].each do |e|
-      ext_config_path = etc/"lsphp/#{version.major_minor}/conf.d/ext-#{e}.ini"
+      ext_config_path = etc/"php/#{version.major_minor}/conf.d/ext-#{e}.ini"
       extension_type = (e == "opcache") ? "zend_extension" : "extension"
       if ext_config_path.exist?
         inreplace ext_config_path,
@@ -268,65 +271,44 @@ class Lsphp73 < Formula
 end
 
 __END__
-diff --git a/acinclude.m4 b/acinclude.m4
-index 168c465f8d..6c087d152f 100644
---- a/acinclude.m4
-+++ b/acinclude.m4
-@@ -441,7 +441,11 @@ dnl
- dnl Adds a path to linkpath/runpath (LDFLAGS)
+diff --git a/build/php.m4 b/build/php.m4
+index 3624a33a8e..d17a635c2c 100644
+--- a/build/php.m4
++++ b/build/php.m4
+@@ -425,7 +425,7 @@ dnl
+ dnl Adds a path to linkpath/runpath (LDFLAGS).
  dnl
  AC_DEFUN([PHP_ADD_LIBPATH],[
 -  if test "$1" != "/usr/$PHP_LIBDIR" && test "$1" != "/usr/lib"; then
-+  case "$1" in
-+  "/usr/$PHP_LIBDIR"|"/usr/lib"[)] ;;
-+  /Library/Developer/CommandLineTools/SDKs/*/usr/lib[)] ;;
-+  /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/*/usr/lib[)] ;;
-+  *[)]
++  if test "$1" != "$PHP_OS_SDKPATH/usr/$PHP_LIBDIR" && test "$1" != "/usr/lib"; then
      PHP_EXPAND_PATH($1, ai_p)
      ifelse([$2],,[
        _PHP_ADD_LIBPATH_GLOBAL([$ai_p])
-@@ -452,8 +456,8 @@ AC_DEFUN([PHP_ADD_LIBPATH],[
-       else
-         _PHP_ADD_LIBPATH_GLOBAL([$ai_p])
-       fi
--    ])
--  fi
-+    ]) ;;
-+  esac
- ])
-
- dnl
-@@ -487,7 +491,11 @@ dnl add an include path.
- dnl if before is 1, add in the beginning of INCLUDES.
+@@ -470,7 +470,7 @@ dnl
+ dnl Add an include path. If before is 1, add in the beginning of INCLUDES.
  dnl
  AC_DEFUN([PHP_ADD_INCLUDE],[
 -  if test "$1" != "/usr/include"; then
-+  case "$1" in
-+  "/usr/include"[)] ;;
-+  /Library/Developer/CommandLineTools/SDKs/*/usr/include[)] ;;
-+  /Applications/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/*/usr/include[)] ;;
-+  *[)]
++  if test "$1" != "$PHP_OS_SDKPATH/usr/include"; then
      PHP_EXPAND_PATH($1, ai_p)
      PHP_RUN_ONCE(INCLUDEPATH, $ai_p, [
        if test "$2"; then
-@@ -495,8 +503,8 @@ AC_DEFUN([PHP_ADD_INCLUDE],[
-       else
-         INCLUDES="$INCLUDES -I$ai_p"
-       fi
--    ])
--  fi
-+    ]) ;;
-+  esac
- ])
+diff --git a/configure.ac b/configure.ac
+index 36c6e5e3e2..71b1a16607 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -190,6 +190,14 @@ PHP_ARG_WITH([libdir],
+   [lib],
+   [no])
 
- dnl internal, don't use
-@@ -2411,7 +2419,8 @@ AC_DEFUN([PHP_SETUP_ICONV], [
-     fi
-
-     if test -f $ICONV_DIR/$PHP_LIBDIR/lib$iconv_lib_name.a ||
--       test -f $ICONV_DIR/$PHP_LIBDIR/lib$iconv_lib_name.$SHLIB_SUFFIX_NAME
-+       test -f $ICONV_DIR/$PHP_LIBDIR/lib$iconv_lib_name.$SHLIB_SUFFIX_NAME ||
-+       test -f $ICONV_DIR/$PHP_LIBDIR/lib$iconv_lib_name.tbd
-     then
-       PHP_CHECK_LIBRARY($iconv_lib_name, libiconv, [
-         found_iconv=yes
++dnl Support systems with system libraries/includes in e.g. /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk.
++PHP_ARG_WITH([os-sdkpath],
++  [for system SDK directory],
++  [AS_HELP_STRING([--with-os-sdkpath=NAME],
++    [Ignore system libraries and includes in NAME rather than /])],
++  [],
++  [no])
++
+ PHP_ARG_ENABLE([rpath],
+   [whether to enable runpaths],
+   [AS_HELP_STRING([--disable-rpath],
