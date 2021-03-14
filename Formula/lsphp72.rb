@@ -8,7 +8,6 @@ class Lsphp72 < Formula
   license "PHP-3.01"
   revision 2
 
-
   keg_only :versioned_formula
 
   disable! date: "2021-11-30", because: :deprecated_upstream
@@ -177,11 +176,6 @@ class Lsphp72 < Formula
       rm dst_default if dst_default.exist?
     end
     config_path.install config_files
-
-    unless (var/"log/php-fpm.log").exist?
-      (var/"log").mkpath
-      touch var/"log/php-fpm.log"
-    end
   end
 
   def post_install
@@ -204,17 +198,17 @@ class Lsphp72 < Formula
     chmod 0644, pear_files
 
     # Custom location for extensions installed via pecl
-    pecl_path = HOMEBREW_PREFIX/"lib/php/pecl"
+    pecl_path = HOMEBREW_PREFIX/"lib/lsphp/pecl"
     ln_s pecl_path, prefix/"pecl" unless (prefix/"pecl").exist?
     extension_dir = Utils.safe_popen_read("#{bin}/php-config", "--extension-dir").chomp
     php_basename = File.basename(extension_dir)
-    php_ext_dir = opt_prefix/"lib/php"/php_basename
+    php_ext_dir = opt_prefix/"lib/lsphp"/php_basename
 
     # fix pear config to install outside cellar
-    pear_path = HOMEBREW_PREFIX/"share/pear@#{version.major_minor}"
+    pear_path = HOMEBREW_PREFIX/"share/pear@ls#{version.major_minor}"
     cp_r pkgshare/"pear/.", pear_path
     {
-      "php_ini"  => etc/"php/#{version.major_minor}/php.ini",
+      "php_ini"  => etc/"lsphp/#{version.major_minor}/php.ini",
       "php_dir"  => pear_path,
       "doc_dir"  => pear_path/"doc",
       "ext_dir"  => pecl_path/php_basename,
@@ -235,7 +229,7 @@ class Lsphp72 < Formula
     %w[
       opcache
     ].each do |e|
-      ext_config_path = etc/"php/#{version.major_minor}/conf.d/ext-#{e}.ini"
+      ext_config_path = etc/"lsphp/#{version.major_minor}/conf.d/ext-#{e}.ini"
       extension_type = (e == "opcache") ? "zend_extension" : "extension"
       if ext_config_path.exist?
         inreplace ext_config_path,
