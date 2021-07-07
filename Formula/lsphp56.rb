@@ -4,16 +4,16 @@ class Lsphp56 < Formula
   url "https://php.net/get/php-5.6.39.tar.xz/from/this/mirror"
   sha256 "8147576001a832ff3d03cb2980caa2d6b584a10624f87ac459fcd3948c6e4a10"
 
+
   keg_only :versioned_formula
 
   depends_on "puleeno/openlitespeed/openlitespeed" => [:build]
   depends_on "pkg-config" => :build
   depends_on "apr"
   depends_on "apr-util"
-  depends_on "argon2"
   depends_on "aspell"
   depends_on "autoconf"
-  depends_on "curl-openssl"
+  depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
   depends_on "gettext"
@@ -23,19 +23,21 @@ class Lsphp56 < Formula
   depends_on "jpeg"
   depends_on "libpng"
   depends_on "libpq"
-  depends_on "libsodium"
-  depends_on "mcrypt"
+  depends_on "libtool"
   depends_on "libzip"
+  depends_on "mcrypt"
   depends_on "openldap"
-  depends_on "openssl"
+  depends_on "openssl@1.1"
   depends_on "pcre"
   depends_on "sqlite"
+  depends_on "tidy-html5"
   depends_on "unixodbc"
-  depends_on "webp"
 
   # PHP build system incorrectly links system libraries
   # see https://github.com/php/php-src/pull/3472
   patch :DATA
+
+  # needs :cxx11
 
   def install
     # Ensure that libxml2 will be detected correctly in older MacOS
@@ -50,9 +52,10 @@ class Lsphp56 < Formula
     # Required due to icu4c dependency
     ENV.cxx11
 
+    # icu4c 61.1 compatability
     ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
 
-    config_path = etc/"lsphp/#{php_version}"
+    config_path = etc/"php/#{php_version}"
     # Prevent system pear config from inhibiting pear install
     (config_path/"pear.conf").delete if (config_path/"pear.conf").exist?
 
@@ -74,17 +77,14 @@ class Lsphp56 < Formula
       --enable-bcmath
       --enable-calendar
       --enable-dba
-      --enable-dtrace
       --enable-exif
       --enable-ftp
       --enable-intl
       --enable-mbregex
       --enable-mbstring
       --enable-mysqlnd
-      --enable-opcache-file
       --enable-pcntl
       --enable-phpdbg
-      --enable-phpdbg-webhelper
       --enable-shmop
       --enable-soap
       --enable-sockets
@@ -94,7 +94,7 @@ class Lsphp56 < Formula
       --enable-wddx
       --enable-zip
       --with-bz2#{headers_path}
-      --with-curl=#{Formula["curl-openssl"].opt_prefix}
+      --with-curl=#{Formula["curl"].opt_prefix}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
       --with-gd
       --with-gettext=#{Formula["gettext"].opt_prefix}
@@ -106,16 +106,16 @@ class Lsphp56 < Formula
       --with-layout=GNU
       --with-ldap=#{Formula["openldap"].opt_prefix}
       --with-ldap-sasl#{headers_path}
-      --with-libxml-dir#{headers_path}
       --with-libedit#{headers_path}
+      --with-libxml-dir#{headers_path}
       --with-libzip
       --with-mcrypt=#{Formula["mcrypt"].opt_prefix}
       --with-mhash#{headers_path}
       --with-mysql-sock=/tmp/mysql.sock
       --with-mysqli=mysqlnd
+      --with-mysql=mysqlnd
       --with-ndbm#{headers_path}
       --with-openssl=#{Formula["openssl"].opt_prefix}
-      --with-password-argon2=#{Formula["argon2"].opt_prefix}
       --with-pdo-dblib=#{Formula["freetds"].opt_prefix}
       --with-pdo-mysql=mysqlnd
       --with-pdo-odbc=unixODBC,#{Formula["unixodbc"].opt_prefix}
@@ -125,14 +125,14 @@ class Lsphp56 < Formula
       --with-pic
       --with-png-dir=#{Formula["libpng"].opt_prefix}
       --with-pspell=#{Formula["aspell"].opt_prefix}
-      --with-sodium=#{Formula["libsodium"].opt_prefix}
       --with-sqlite3=#{Formula["sqlite"].opt_prefix}
+      --with-tidy=#{Formula["tidy-html5"].opt_prefix}
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
-      --with-webp-dir=#{Formula["webp"].opt_prefix}
       --with-xmlrpc
       --with-xsl#{headers_path}
       --with-zlib#{headers_path}
     ]
+
     system "./configure", *args
     system "make"
     system "make", "install"
@@ -142,7 +142,7 @@ class Lsphp56 < Formula
     orig_ext_dir = File.basename(extension_dir)
     inreplace bin/"php-config", lib/"php", prefix/"pecl"
     inreplace "php.ini-development", %r{; ?extension_dir = "\./"},
-      "extension_dir = \"#{HOMEBREW_PREFIX}/lib/lsphp/pecl/#{orig_ext_dir}\""
+      "extension_dir = \"#{HOMEBREW_PREFIX}/lib/php/pecl/#{orig_ext_dir}\""
 
     config_files = {
       "php.ini-development"   => "php.ini",
@@ -174,7 +174,7 @@ class Lsphp56 < Formula
     chmod 0644, pear_files
 
     # Custom location for extensions installed via pecl
-    pecl_path = HOMEBREW_PREFIX/"lib/lsphp/pecl"
+    pecl_path = HOMEBREW_PREFIX/"lib/php/pecl"
     ln_s pecl_path, prefix/"pecl" unless (prefix/"pecl").exist?
     extension_dir = Utils.popen_read("#{bin}/php-config --extension-dir").chomp
     php_basename = File.basename(extension_dir)
@@ -184,7 +184,7 @@ class Lsphp56 < Formula
     pear_path = HOMEBREW_PREFIX/"share/pear@#{php_version}"
     cp_r pkgshare/"pear/.", pear_path
     {
-      "php_ini"  => etc/"lsphp/#{php_version}/php.ini",
+      "php_ini"  => etc/"php/#{php_version}/php.ini",
       "php_dir"  => pear_path,
       "doc_dir"  => pear_path/"doc",
       "ext_dir"  => pecl_path/php_basename,
@@ -205,7 +205,7 @@ class Lsphp56 < Formula
     %w[
       opcache
     ].each do |e|
-      ext_config_path = etc/"lsphp/#{php_version}/conf.d/ext-#{e}.ini"
+      ext_config_path = etc/"php/#{php_version}/conf.d/ext-#{e}.ini"
       extension_type = (e == "opcache") ? "zend_extension" : "extension"
       if ext_config_path.exist?
         inreplace ext_config_path,
@@ -287,3 +287,37 @@ index 168c465f8d..6c087d152f 100644
      then
        PHP_CHECK_LIBRARY($iconv_lib_name, libiconv, [
          found_iconv=yes
+diff --git a/Zend/zend_compile.h b/Zend/zend_compile.h
+index a0955e34fe..09b4984f90 100644
+--- a/Zend/zend_compile.h
++++ b/Zend/zend_compile.h
+@@ -414,9 +414,6 @@ struct _zend_execute_data {
+
+ #define EX(element) execute_data.element
+
+-#define EX_TMP_VAR(ex, n)	   ((temp_variable*)(((char*)(ex)) + ((int)(n))))
+-#define EX_TMP_VAR_NUM(ex, n)  (EX_TMP_VAR(ex, 0) - (1 + (n)))
+-
+ #define EX_CV_NUM(ex, n)       (((zval***)(((char*)(ex))+ZEND_MM_ALIGNED_SIZE(sizeof(zend_execute_data))))+(n))
+
+
+diff --git a/Zend/zend_execute.h b/Zend/zend_execute.h
+index a7af67bc13..ae71a5c73f 100644
+--- a/Zend/zend_execute.h
++++ b/Zend/zend_execute.h
+@@ -71,6 +71,15 @@ ZEND_API int zend_eval_stringl_ex(char *str, int str_len, zval *retval_ptr, char
+ ZEND_API char * zend_verify_arg_class_kind(const zend_arg_info *cur_arg_info, ulong fetch_type, const char **class_name, zend_class_entry **pce TSRMLS_DC);
+ ZEND_API int zend_verify_arg_error(int error_type, const zend_function *zf, zend_uint arg_num, const char *need_msg, const char *need_kind, const char *given_msg, const char *given_kind TSRMLS_DC);
+
++static zend_always_inline temp_variable *EX_TMP_VAR(void *ex, int n)
++{
++	return (temp_variable *)((zend_uintptr_t)ex + n);
++}
++static inline temp_variable *EX_TMP_VAR_NUM(void *ex, int n)
++{
++	return (temp_variable *)((zend_uintptr_t)ex - (1 + n) * sizeof(temp_variable));
++}
++
+ static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr ZEND_FILE_LINE_DC TSRMLS_DC)
+ {
+	if (!Z_DELREF_P(zval_ptr)) {
