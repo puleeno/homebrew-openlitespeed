@@ -173,7 +173,7 @@ class Lsphp73 < Formula
     orig_ext_dir = File.basename(extension_dir)
     inreplace bin/"php-config", lib/"php", prefix/"pecl"
     inreplace "php.ini-development", %r{; ?extension_dir = "\./"},
-      "extension_dir = \"#{HOMEBREW_PREFIX}/lib/lsphp/pecl/#{orig_ext_dir}\""
+      "extension_dir = \"#{HOMEBREW_PREFIX}/lib/php/pecl/#{orig_ext_dir}\""
 
     # Use OpenSSL cert bundle
     openssl = Formula["openssl@1.1"]
