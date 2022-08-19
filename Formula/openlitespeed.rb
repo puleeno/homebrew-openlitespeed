@@ -21,7 +21,7 @@ class Openlitespeed < Formula
     depends_on "rcs"
     depends_on "libgeoip"
     depends_on "zlib"
-    depends_on "udns"
+    depends_on "puleeno/openlitespeed/udns"
     depends_on "sqlite"
     depends_on "luajit" => :optional
 
