@@ -14,7 +14,7 @@ class AdminPhp < Formula
     deprecate! date: "2021-12-06", because: :versioned_formula
 
     depends_on "expat"
-    depends_on "openssl@1.1"
+    depends_on "openssl"
     depends_on "libzip"
     depends_on "sqlite"
 
@@ -36,6 +36,25 @@ class AdminPhp < Formula
 
       # Required due to icu4c dependency
       ENV.cxx11
+
+      # PHP 7.3 uses RSA_SSLV23_PADDING removed in OpenSSL 3.x
+      # RSA_PKCS1_PADDING is the equivalent replacement
+      ENV.append "CFLAGS", "-DRSA_SSLV23_PADDING=RSA_PKCS1_PADDING"
+
+      # Newer Clang (ISO C99+) treats implicit function declarations as errors.
+      # PHP 7.3's LiteSpeed SAPI has missing includes (e.g. php_header in lsapi_main.c).
+      ENV.append "CFLAGS", "-Wno-implicit-function-declaration"
+
+      # DNS resolver symbols (_res_9_init etc.) live in -lresolv on macOS arm64.
+      ENV.append "LDFLAGS", "-lresolv"
+
+      # Newer macOS SDK only provides the 3-arg POSIX readdir_r.
+      # PHP 7.3 still calls the old 2-arg BSD version inside HAVE_OLD_READDIR_R.
+      # Patch the source directly since -U flags are overridden by configure-generated config.h.
+      # A temporary variable captures the 3rd arg since 'dp' is not in scope at the call site.
+      inreplace "main/reentrancy.c",
+        "readdir_r(dirp, entry);",
+        "{ struct dirent *_readdir_result; readdir_r(dirp, entry, &_readdir_result); }"
 
       config_path = etc/"admin_php/#{php_version}"
       # Prevent system pear config from inhibiting pear install
@@ -63,7 +82,7 @@ class AdminPhp < Formula
         --enable-posix
         --enable-bcmath
         --with-libzip
-        --with-openssl=#{Formula["openssl@1.1"].opt_prefix}
+        --with-openssl=#{Formula["openssl"].opt_prefix}
         --with-sqlite3=#{Formula["sqlite"].opt_prefix}
         --with-libexpat-dir=#{Formula["expat"].opt_prefix}
       ]

@@ -19,7 +19,7 @@ class Openlitespeed < Formula
     depends_on "expat"
     depends_on "openssl"
     depends_on "rcs"
-    depends_on "libgeoip"
+
     depends_on "zlib"
     depends_on "puleeno/openlitespeed/udns"
     depends_on "sqlite"

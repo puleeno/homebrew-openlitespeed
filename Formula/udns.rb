@@ -1,7 +1,7 @@
 class Udns < Formula
   desc "DNS resolver library"
   homepage "https://www.corpit.ru/mjt/udns.html"
-  url "https://www.corpit.ru/mjt/udns/udns-0.4.tar.gz"
+  url "http://deb.debian.org/debian/pool/main/u/udns/udns_0.4.orig.tar.gz"
   sha256 "115108dc791a2f9e99e150012bcb459d9095da2dd7d80699b584ac0ac3768710"
 
   bottle do
