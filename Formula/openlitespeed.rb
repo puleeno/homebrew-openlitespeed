@@ -25,6 +25,8 @@ class Openlitespeed < Formula
     depends_on "sqlite"
     depends_on "luajit" => :optional
 
+    patch :DATA
+
     def install
         # Disable PHP-Builtin
         cd  "dist" do
@@ -51,6 +53,7 @@ class Openlitespeed < Formula
 
             CPPFLAGS=-I#{HOMEBREW_PREFIX}/include
             LDFLAGS=-L#{HOMEBREW_PREFIX}/lib
+            --enable-iptogeo=no
         ]
 
         args << "--enable-http2=no" if build.without? "http2"
@@ -112,3 +115,18 @@ class Openlitespeed < Formula
     EOS
   end
 end
+
+__END__
+--- a/include/lsr/ls_atomic.h
++++ b/include/lsr/ls_atomic.h
+@@ -25,8 +25,8 @@
+  * @file
+  */
+ 
+-#if defined(__aarch64__)
+-#include <bits/types.h>
++#if defined(__aarch64__) && defined(__linux__)
++#include <stdint.h>
+ #endif
+ 
+ #define ls_atomic_inline ls_always_inline
