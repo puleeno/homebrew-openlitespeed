@@ -36,6 +36,11 @@ class Openlitespeed < Formula
             inreplace "functions.sh", "SETUP_PHP=1", "SETUP_PHP=0"
         end
 
+        # Use system OpenSSL instead of building bundled old version
+        inreplace "configure", "usedynossl=no", "usedynossl=yes"
+        inreplace "configure", ' -I../../ssl/include $CPPFLAGS', ' $CPPFLAGS'
+        inreplace "configure", "echo \"Will build latest stable openssl libraries for you, this may take several minutes ...\"\n    OSSL=`. $srcdir/dlossl.sh`\n    echo \"Finsihed building openssl.\"", "echo \"Skipping bundled openssl build, using system openssl...\""
+
         # Configurations
         get_user = `USERS`
         args = %W[
@@ -44,7 +49,7 @@ class Openlitespeed < Formula
             --with-user=#{get_user}
             --with-group=admin
 
-            --with-libdir=#{HOMEBREW_PREFIX}/lib
+            --with-libdir=lib
             --with-zlib=#{Formula["zlib"].opt_prefix}
             --with-openssl=#{Formula["openssl"].opt_prefix}
             --with-pcre=#{Formula["pcre"].opt_prefix}
@@ -92,34 +97,35 @@ class Openlitespeed < Formula
         end
     end
 
-    def plist; <<~EOS
-    <?xml version=1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-        <dict>
-            <key>Label</key>
-            <string>#{plist_name}</string>
-            <key>ProgramArguments</key>
-            <array>
-                <string>#{opt_bin}/lswsctrl</string>
-                <string>start</string>
-            </array>
-            <key>RunAtLoad</key>
-            <true/>
-            <key>KeepAlive</key>
-            <false/>
-            <key>WorkingDirectory</key>
-            <string>#{prefix}</string>
-        </dict>
-    </plist>
-    EOS
-  end
+    def plist
+      <<~EOS
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+            <dict>
+                <key>Label</key>
+                <string>#{plist_name}</string>
+                <key>ProgramArguments</key>
+                <array>
+                    <string>#{opt_bin}/lswsctrl</string>
+                    <string>start</string>
+                </array>
+                <key>RunAtLoad</key>
+                <true/>
+                <key>KeepAlive</key>
+                <false/>
+                <key>WorkingDirectory</key>
+                <string>#{prefix}</string>
+            </dict>
+        </plist>
+      EOS
+    end
 end
 
 __END__
 --- a/include/lsr/ls_atomic.h
 +++ b/include/lsr/ls_atomic.h
-@@ -25,8 +25,8 @@
+@@ -25,10 +25,9 @@
   * @file
   */
  
@@ -128,5 +134,7 @@ __END__
 +#if defined(__aarch64__) && defined(__linux__)
 +#include <stdint.h>
  #endif
- 
+-
  #define ls_atomic_inline ls_always_inline
+ 
+ typedef volatile int32_t  ls_atom_32_t;
