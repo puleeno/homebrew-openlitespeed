@@ -1,5 +1,3 @@
-require "formula"
-
 class Openlitespeed < Formula
     desc "OpenLiteSpeed is a high-performance, lightweight, open source HTTP server developed and copyrighted by LiteSpeed Technologies. Users are free to download, use, distribute, and modify OpenLiteSpeed and its source code in accordance with the precepts of the GPLv3 license."
     homepage "https://openlitespeed.org/"
@@ -84,17 +82,40 @@ class Openlitespeed < Formula
     end
 
     def post_install
-        litespeed_dirs = %W[
-            #{prefix}/logs
-            #{prefix}/admin/logs
-            #{prefix}/admin/cgid
-            #{prefix}/admin/tmp
-            #{prefix}/Example/logs
+        litespeed_dirs = %w[
+            logs
+            admin/logs
+            admin/cgid
+            admin/tmp
+            Example/logs
         ]
 
         litespeed_dirs.each do |d|
-            d.mkpath
+            (prefix/d).mkpath
         end
+
+        # Write launchd plist for brew services
+        (prefix/"homebrew.mxcl.openlitespeed.plist").write <<~EOS
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+              <dict>
+                  <key>Label</key>
+                  <string>homebrew.mxcl.openlitespeed</string>
+                  <key>ProgramArguments</key>
+                  <array>
+                      <string>#{opt_bin}/lswsctrl</string>
+                      <string>start</string>
+                  </array>
+                  <key>RunAtLoad</key>
+                  <true/>
+                  <key>KeepAlive</key>
+                  <false/>
+                  <key>WorkingDirectory</key>
+                  <string>#{prefix}</string>
+              </dict>
+          </plist>
+        EOS
     end
 
     def plist
