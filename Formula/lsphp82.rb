@@ -40,7 +40,7 @@ class Lsphp82 < Formula
   depends_on "libzip"
   depends_on "oniguruma"
   depends_on "openldap"
-  depends_on "openssl@1.1"
+  depends_on "openssl"
   depends_on "pcre2"
   depends_on "sqlite"
   depends_on "tidy-html5"
@@ -184,7 +184,7 @@ class Lsphp82 < Formula
       "extension_dir = \"#{HOMEBREW_PREFIX}/lib/php/pecl/#{orig_ext_dir}\""
 
     # Use OpenSSL cert bundle
-    openssl = Formula["openssl@1.1"]
+    openssl = Formula["openssl"]
     inreplace "php.ini-development", /; ?openssl\.cafile=/,
       "openssl.cafile = \"#{openssl.pkgetc}/cert.pem\""
     inreplace "php.ini-development", /; ?openssl\.capath=/,
@@ -293,3 +293,20 @@ index 3624a33a8e..d17a635c2c 100644
      PHP_EXPAND_PATH($1, ai_p)
      PHP_RUN_ONCE(INCLUDEPATH, $ai_p, [
        if test "$2"; then
+diff --git a/configure.ac b/configure.ac
+index 36c6e5e3e2..71b1a16607 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -190,6 +190,14 @@ PHP_ARG_WITH([libdir],
+   [lib],
+   [no])
+
++dnl Support systems with system libraries/includes in e.g. /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk.
++PHP_ARG_WITH([os-sdkpath],
++  [for system SDK directory],
++  [AS_HELP_STRING([--with-os-sdkpath=NAME],
++    [Ignore system libraries and includes in NAME rather than /])],
++  [],
++  [no])
++
+ PHP_ARG_ENABLE([rpath],
