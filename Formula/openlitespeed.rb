@@ -39,6 +39,9 @@ class Openlitespeed < Formula
         inreplace "configure", ' -I../../ssl/include $CPPFLAGS', ' $CPPFLAGS'
         inreplace "configure", "echo \"Will build latest stable openssl libraries for you, this may take several minutes ...\"\n    OSSL=`. $srcdir/dlossl.sh`\n    echo \"Finsihed building openssl.\"", "echo \"Skipping bundled openssl build, using system openssl...\""
 
+        # Remove old 32-bit linker flags that break Mach-O on arm64
+        inreplace "configure", "-Wl,-export_dynamic -pagezero_size 10000 -image_base 100000000", "-Wl,-export_dynamic"
+
         # Configurations
         get_user = `USERS`
         args = %W[
