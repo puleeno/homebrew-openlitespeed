@@ -9,8 +9,8 @@ class Openlitespeed < Formula
 
     bottle do
       root_url "https://ghcr.io/v2/puleeno/openlitespeed"
-      rebuild 1
-      sha256 cellar: :any, arm64_sonoma: "906aba9d5565196e75045a453cc063f0bbdbf7ea14a3c3ecf1e238f411e90591"
+      rebuild 2
+      sha256 cellar: :any, arm64_sonoma: "3bc4b3c05c0c38b2451ebf42631ec956090de15f08c70aaf9c40523e26d0b9a3"
     end
 
     option "with-luajit", "use liblua (located in directory DIR, if supplied) for compiling mod_lua module.  [default=no]"
@@ -51,6 +51,14 @@ class Openlitespeed < Formula
         # Disable PCRE JIT in the admin console PHP (lsphp81 8.1 bundles
         # PCRE 10.44 whose JIT segfaults on Apple Silicon during login)
         inreplace "dist/admin/conf/php.ini", "; Local Variables:", "pcre.jit = 0\n\n; Local Variables:"
+
+        # The WebAdmin PHP code targets PHP 7.x and uses curly-brace offset
+        # access (e.g. $var{0}) which was removed in PHP 8.0. Rewrite those
+        # expressions to bracket syntax so the admin console runs on lsphp81.
+        Dir["dist/admin/**/*.php"].each do |php|
+          next unless File.binread(php).match?(/\$(\w+)\s*\{([^}]*)\}/)
+          inreplace php, /\$(\w+)\s*\{([^}]*)\}/, '$\1[\2]'
+        end
 
         # Configurations
         get_user = `USERS`
