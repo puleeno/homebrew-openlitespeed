@@ -130,28 +130,13 @@ class Openlitespeed < Formula
         EOS
     end
 
-    def plist
-      <<~EOS
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-            <dict>
-                <key>Label</key>
-                <string>#{plist_name}</string>
-                <key>ProgramArguments</key>
-                <array>
-                    <string>#{opt_bin}/lswsctrl</string>
-                    <string>start</string>
-                </array>
-                <key>RunAtLoad</key>
-                <true/>
-                <key>KeepAlive</key>
-                <false/>
-                <key>WorkingDirectory</key>
-                <string>#{prefix}</string>
-            </dict>
-        </plist>
-      EOS
+    # Modern `brew services` requires a `service` block. The old `plist`
+    # method is no longer recognized by brew services.
+    service do
+      run [opt_bin/"lswsctrl", "start"]
+      keep_alive false
+      working_dir opt_prefix
+      run_at_load true
     end
 end
 
