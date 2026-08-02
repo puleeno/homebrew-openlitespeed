@@ -36,7 +36,7 @@ class Lsphp56 < Formula
   depends_on "libtool"
   depends_on "libzip"
   depends_on "openldap"
-  depends_on "openssl@1.1"
+  depends_on "openssl"
   depends_on "pcre"
   depends_on "sqlite"
   depends_on "tidy-html5"
@@ -58,10 +58,25 @@ class Lsphp56 < Formula
     # Work around configure issues with Xcode 12
     # See https://bugs.php.net/bug.php?id=80171
     ENV.append "CFLAGS", "-Wno-implicit-function-declaration"
+    ENV.append "CFLAGS", "-Wno-incompatible-function-pointer-types"
+    ENV.append "CFLAGS", "-Wno-implicit-int"
 
     # Workaround for https://bugs.php.net/80310
     ENV.append "CFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
     ENV.append "CXXFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
+
+    # PHP 5.6 uses RSA_SSLV23_PADDING removed in OpenSSL 3.x
+    # RSA_PKCS1_PADDING is the equivalent replacement
+    ENV.append "CFLAGS", "-DRSA_SSLV23_PADDING=RSA_PKCS1_PADDING"
+
+    # DNS resolver symbols (_res_9_init etc.) live in -lresolv on macOS arm64.
+    ENV.append "LDFLAGS", "-lresolv"
+
+    # Newer macOS SDK only provides the 3-arg POSIX readdir_r.
+    # PHP 5.6 still calls the old 2-arg BSD version inside HAVE_OLD_READDIR_R.
+    inreplace "main/reentrancy.c",
+      "readdir_r(dirp, entry);",
+      "{ struct dirent *_readdir_result; readdir_r(dirp, entry, &_readdir_result); }"
 
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
@@ -69,8 +84,11 @@ class Lsphp56 < Formula
     # API compatibility with tidy-html5 v5.0.0 - https://github.com/htacg/tidy-html5/issues/224
     inreplace "ext/tidy/tidy.c", "buffio.h", "tidybuffio.h"
 
-    # Required due to icu4c dependency
-    ENV.cxx11
+    # Required due to icu4c dependency. ICU 78 headers (bytestream.h,
+    # char16ptr.h) use C++17 features (std::void_t, std::enable_if_t), so a
+    # plain C++11 toolchain can no longer compile PHP 5.6's ext/intl.
+    ENV.append "CXXFLAGS", "-std=c++17"
+    ENV.append "CXXFLAGS", "-Wno-register"
 
     # icu4c 61.1 compatability
     ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
@@ -133,7 +151,7 @@ class Lsphp56 < Formula
       --with-mysql-sock=/tmp/mysql.sock
       --with-mysqli=mysqlnd
       --with-mysql=mysqlnd
-      --with-openssl=#{Formula["openssl@1.1"].opt_prefix}
+      --with-openssl=#{Formula["openssl"].opt_prefix}
       --with-pdo-dblib=#{Formula["freetds"].opt_prefix}
       --with-pdo-mysql=mysqlnd
       --with-pdo-odbc=unixODBC,#{Formula["unixodbc"].opt_prefix}
@@ -182,7 +200,7 @@ class Lsphp56 < Formula
     end
 
     # Use OpenSSL cert bundle
-    openssl = Formula["openssl@1.1"]
+    openssl = Formula["openssl"]
     %w[development production].each do |mode|
       inreplace "php.ini-#{mode}", /; ?openssl\.cafile=/,
         "openssl.cafile = \"#{openssl.pkgetc}/cert.pem\""
@@ -340,7 +358,36 @@ index 168c465f8d..6c087d152f 100644
      then
        PHP_CHECK_LIBRARY($iconv_lib_name, libiconv, [
          found_iconv=yes
-diff --git a/Zend/zend_compile.h b/Zend/zend_compile.h
+
+diff --git a/acinclude.m4 b/acinclude.m4
+index 0fd9623..dc7bb5e 100644
+--- a/acinclude.m4
++++ b/acinclude.m4
+@@ -1963,21 +1963,19 @@ dnl
+ AC_DEFUN([PHP_TEST_BUILD], [
+   old_LIBS=$LIBS
+   LIBS="$4 $LIBS"
+-  AC_TRY_RUN([
++  AC_LINK_IFELSE([AC_LANG_SOURCE([[
+     $5
+     char $1();
+     int main() {
+       $1();
+       return 0;
+     }
+-  ], [
++  ]])],[
+     LIBS=$old_LIBS
+     $2
+   ],[
+     LIBS=$old_LIBS
+     $3
+-  ],[
+-    LIBS=$old_LIBS
+   ])
+ ])
+ 
+ diff --git a/Zend/zend_compile.h b/Zend/zend_compile.h
 index a0955e34fe..09b4984f90 100644
 --- a/Zend/zend_compile.h
 +++ b/Zend/zend_compile.h
@@ -373,4 +420,55 @@ index a7af67bc13..ae71a5c73f 100644
 +
  static zend_always_inline void i_zval_ptr_dtor(zval *zval_ptr ZEND_FILE_LINE_DC TSRMLS_DC)
  {
-	if (!Z_DELREF_P(zval_ptr)) {
+ 	if (!Z_DELREF_P(zval_ptr)) {
+
+diff --git a/TSRM/threads.m4 b/TSRM/threads.m4
+index 38494ce..90c106f 100644
+--- a/TSRM/threads.m4
++++ b/TSRM/threads.m4
+@@ -66,7 +66,7 @@ dnl
+ dnl Check whether the current setup can use POSIX threads calls
+ dnl
+ AC_DEFUN([PTHREADS_CHECK_COMPILE], [
+-AC_TRY_RUN( [
++AC_LINK_IFELSE([ AC_LANG_SOURCE([
+ #include <pthread.h>
+ #include <stddef.h>
+ 
+@@ -80,18 +80,11 @@ int main() {
+     int data = 1;
+     pthread_mutexattr_init(&mattr);
+     return pthread_create(&thd, NULL, thread_routine, &data);
+-} ], [
++} ]) ], [
+   pthreads_working=yes
+   ], [
+   pthreads_working=no
+-  ], [
+-  dnl For cross compiling running this test is of no use. NetWare supports pthreads
+-  pthreads_working=no
+-  case $host_alias in
+-  *netware*)
+-    pthreads_working=yes
+-  esac
+-]
++  ]
+ ) ] )dnl
+ dnl
+ dnl PTHREADS_CHECK()
+@@ -135,7 +128,6 @@ else
+       fi
+     done
+   fi
+-fi
+ ])
+ 
+ AC_CACHE_CHECK(for pthreads_lib, ac_cv_pthreads_lib,[
+@@ -153,6 +145,7 @@ if test "$pthreads_working" != "yes"; then
+   done
+ fi
+ ])
++fi
+ 
+ if test "$pthreads_working" = "yes"; then
+   threads_result="POSIX-Threads found"
