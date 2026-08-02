@@ -60,6 +60,11 @@ class Openlitespeed < Formula
           inreplace php, /\$(\w+)\s*\{([^}]*)\}/, '$\1[\2]'
         end
 
+        # get_magic_quotes_gpc() was removed in PHP 8.0 (magic quotes are
+        # gone, it always returns false), so drop the dead stripslashes call.
+        inreplace "dist/admin/html.open/lib/DAttrBase.php",
+                  "            if (get_magic_quotes_gpc()) {\n                $value = stripslashes($value);\n            }", ""
+
         # Configurations
         get_user = `USERS`
         args = %W[
@@ -116,7 +121,9 @@ class Openlitespeed < Formula
         end
 
         # Write launchd plist for brew services
-        (prefix/"homebrew.mxcl.openlitespeed.plist").write <<~EOS
+        plist_path = prefix/"homebrew.mxcl.openlitespeed.plist"
+        plist_path.unlink if plist_path.exist?
+        plist_path.write <<~EOS
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
