@@ -42,6 +42,10 @@ class Openlitespeed < Formula
         # Remove old 32-bit linker flags that break Mach-O on arm64
         inreplace "configure", "-Wl,-export_dynamic -pagezero_size 10000 -image_base 100000000", "-Wl,-export_dynamic"
 
+        # Disable PCRE JIT in the admin console PHP (admin_php 7.3 bundles
+        # PCRE 10.32 whose JIT segfaults on Apple Silicon during login)
+        inreplace "dist/admin/conf/php.ini", "; Local Variables:", "pcre.jit = 0\n\n; Local Variables:"
+
         # Configurations
         get_user = `USERS`
         args = %W[
