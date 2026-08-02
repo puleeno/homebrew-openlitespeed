@@ -6,6 +6,7 @@ class Udns < Formula
 
   bottle do
     sha256 cellar: :any, catalina:    "18ac00a1a30fea027e398558edf149e464712c94fa68242740cc8e086e1ec036"
+    sha256 cellar: :any, arm64_sonoma: "ce2bfabe46e00fd57b4a5ca59da83e8adfc5ee193a0b0a72709c64a73f0601db"
     sha256 cellar: :any, mojave:      "ce9ffcdbc08861f382e251d66293c4de690e5bffe1ca3015909332b71ea306c8"
     sha256 cellar: :any, high_sierra: "806e631f04904c4e550e3397a6519ee1803cb3cbef916967f42aed331e875afa"
     sha256 cellar: :any, sierra:      "8fbcc7a26f6be81abfe4766e9efc012c720938e8ea9dc9f20497cb82b101e659"

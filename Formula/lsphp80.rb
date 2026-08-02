@@ -7,6 +7,11 @@ class Lsphp80 < Formula
   sha256 "c9816aa9745a9695672951eaff3a35ca5eddcb9cacf87a4f04b9fb1169010251"
   license "PHP-3.01"
 
+  bottle do
+    root_url "https://ghcr.io/v2/puleeno/openlitespeed"
+    sha256 cellar: :any, arm64_sonoma: "937199665edf0798708a4b89354d0b4759c5c7d54444a4ae5d93c38a3a7fe83d"
+  end
+
   livecheck do
     url "https://www.php.net/releases/feed.php"
     regex(/PHP (\d+(?:\.\d+)+) /i)

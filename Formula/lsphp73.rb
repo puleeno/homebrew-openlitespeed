@@ -8,6 +8,10 @@ class Lsphp73 < Formula
   license "PHP-3.01"
   revision 1
 
+  bottle do
+    root_url "https://ghcr.io/v2/puleeno/openlitespeed"
+    sha256 cellar: :any, arm64_sonoma: "0530c2d90349be6d3985f34292d50635c692526c2885cfeeca45beefbd659cf1"
+  end
 
   keg_only :versioned_formula
 

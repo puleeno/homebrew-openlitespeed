@@ -8,6 +8,10 @@ class AdminPhp < Formula
     license "PHP-3.01"
     revision 1
 
+    bottle do
+      root_url "https://ghcr.io/v2/puleeno/openlitespeed"
+      sha256 cellar: :any, arm64_sonoma: "a8aacef707d8f8aea8e1ec9ed1357ff8454032cb4d7233a2803d49dd38b4da69"
+    end
 
     keg_only :versioned_formula
 

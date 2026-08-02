@@ -7,6 +7,11 @@ class Openlitespeed < Formula
     head "https://github.com/litespeedtech/openlitespeed.git"
     version "1.4.51"
 
+    bottle do
+      root_url "https://ghcr.io/v2/puleeno/openlitespeed"
+      sha256 cellar: :any, arm64_sonoma: "d210be9ab5886f0e26b6b6d4ae334c8fec9003f88a5ad2a1a21c9adc9125f594"
+    end
+
     option "with-luajit", "use liblua (located in directory DIR, if supplied) for compiling mod_lua module.  [default=no]"
     option "with-debug", "Enable debugging symbols (Debug is disabled by default)"
 

@@ -7,6 +7,11 @@ class Lsphp56 < Formula
   license "PHP-3.01"
   revision 4
 
+  bottle do
+    root_url "https://ghcr.io/v2/puleeno/openlitespeed"
+    sha256 cellar: :any, arm64_sonoma: "80688a481a19b817a6dce7ac2b6919f6b0bfc6b2ab8030bbbeabde7362d53376"
+  end
+
   keg_only :versioned_formula
 
   # This PHP version is not supported upstream as of 2018-12-31.
