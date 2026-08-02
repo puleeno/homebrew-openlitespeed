@@ -21,6 +21,11 @@ class Udns < Formula
   end
 
   def install
+    # Newer macOS SDK/Xcode default clients to treating implicit function
+    # declarations as errors, which breaks the configure socket/connect probe.
+    ENV.append "CFLAGS", "-Wno-implicit-function-declaration"
+    ENV.append "CFLAGS", "-Wno-int-conversion"
+
     system "./configure"
     system "make"
     system "make", "dylib"
