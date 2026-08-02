@@ -59,3 +59,15 @@ If this project help you reduce time to develop, you can give me a cup of coffee
 
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.me/puleeno)
+
+# Bottles
+Binary bottles for all formulae are built and published automatically via GitHub Actions to the GitHub Container Registry
+(`ghcr.io/v2/puleeno/openlitespeed`).
+
+**Release workflow**
+1. Open a pull request touching the formula(s) you want to release.
+2. The `brew test-bot` workflow builds bottles for the PR and uploads them as artifacts.
+3. Add the `pr-pull` label to the PR. The `brew pr-pull` workflow publishes the bottles to GHCR,
+   commits the new bottle hashes back to `main`, and closes the PR.
+
+Currently published for `arm64_sonoma` (macOS 14, Apple Silicon).
