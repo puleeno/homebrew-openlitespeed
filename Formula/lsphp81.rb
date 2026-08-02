@@ -9,7 +9,8 @@ class Lsphp81 < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/puleeno/openlitespeed"
-    sha256 cellar: :any, arm64_sonoma: "7b56e9432685d709be5a4d04a430675ac165c862ebcdeb6f15abd8080aa285b6"
+    rebuild 1
+    sha256 cellar: :any, arm64_sonoma: "3c64703b49be68ead2a8a974cc7fad75bbe098bf8c4c5152731ff74881cd8c76"
   end
 
   livecheck do
@@ -24,7 +25,6 @@ class Lsphp81 < Formula
     depends_on "re2c" => :build # required to generate PHP lexers
   end
 
-  depends_on "puleeno/openlitespeed/openlitespeed" => [:build]
   depends_on "pkg-config" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -107,7 +107,7 @@ class Lsphp81 < Formula
       --with-config-file-path=#{config_path}
       --with-config-file-scan-dir=#{config_path}/conf.d
       --with-pear=#{pkgshare}/pear
-      --with-litespeed
+      --enable-litespeed
       --enable-bcmath
       --enable-calendar
       --enable-dba

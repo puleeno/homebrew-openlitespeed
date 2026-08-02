@@ -34,7 +34,7 @@ Password: 123456
 
 
 # Multi PHP versions
-Default Openlitespeed for homebrew use admin_php belongs with WebAdmin has basic features.
+Default Openlitespeed for homebrew uses lsphp81 (PHP 8.1) for WebAdmin and the default `lsphp` external app.
 You can install other PHP version via this homebrew package.
 
 List PHP version supports

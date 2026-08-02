@@ -9,7 +9,8 @@ class Openlitespeed < Formula
 
     bottle do
       root_url "https://ghcr.io/v2/puleeno/openlitespeed"
-      sha256 cellar: :any, arm64_sonoma: "d210be9ab5886f0e26b6b6d4ae334c8fec9003f88a5ad2a1a21c9adc9125f594"
+      rebuild 1
+      sha256 cellar: :any, arm64_sonoma: "906aba9d5565196e75045a453cc063f0bbdbf7ea14a3c3ecf1e238f411e90591"
     end
 
     option "with-luajit", "use liblua (located in directory DIR, if supplied) for compiling mod_lua module.  [default=no]"
@@ -17,7 +18,7 @@ class Openlitespeed < Formula
 
     option "without-http2", "Disable SPDY and http2 over HTTPS"
 
-    depends_on "puleeno/openlitespeed/admin_php"
+    depends_on "puleeno/openlitespeed/lsphp81"
     depends_on "pcre"
     depends_on "expat"
     depends_on "openssl"
@@ -47,8 +48,8 @@ class Openlitespeed < Formula
         # Remove old 32-bit linker flags that break Mach-O on arm64
         inreplace "configure", "-Wl,-export_dynamic -pagezero_size 10000 -image_base 100000000", "-Wl,-export_dynamic"
 
-        # Disable PCRE JIT in the admin console PHP (admin_php 7.3 bundles
-        # PCRE 10.32 whose JIT segfaults on Apple Silicon during login)
+        # Disable PCRE JIT in the admin console PHP (lsphp81 8.1 bundles
+        # PCRE 10.44 whose JIT segfaults on Apple Silicon during login)
         inreplace "dist/admin/conf/php.ini", "; Local Variables:", "pcre.jit = 0\n\n; Local Variables:"
 
         # Configurations
@@ -81,16 +82,16 @@ class Openlitespeed < Formula
         system "make"
         system "make", "install"
 
-        # Create Admin_Php Symlink
-        ln_sf "#{Formula["admin_php"].bin}/lsphp", "#{prefix}/admin/fcgi-bin/admin_php"
-        ln_sf "#{Formula["admin_php"].bin}/lsphp", "#{prefix}/fcgi-bin/lsphp"
-        ln_sf "#{Formula["admin_php"].bin}/lsphp", "#{prefix}/fcgi-bin/lsphp5"
+        # Create Lsphp81 Symlink
+        ln_sf "#{Formula["lsphp81"].bin}/lsphp", "#{prefix}/admin/fcgi-bin/admin_php"
+        ln_sf "#{Formula["lsphp81"].bin}/lsphp", "#{prefix}/fcgi-bin/lsphp"
+        ln_sf "#{Formula["lsphp81"].bin}/lsphp", "#{prefix}/fcgi-bin/lsphp5"
 
         # Replace relative path by absolute path for Openlitespeed binary
         inreplace "#{bin}/lswsctrl.open", "$BASE_DIR/..", "#{prefix}"
         inreplace "#{bin}/lswsctrl.open", "$BASE_DIR\"/\"..", "#{prefix}"
         inreplace "#{bin}/lswsctrl.open", "\.\/", "#{bin}\/"
-        `echo "admin:#{`#{Formula["admin_php"].bin}/lsphp -q #{prefix}/admin/misc/htpasswd.php 123456`}" > #{prefix}/admin/conf/htpasswd`
+        `echo "admin:#{`#{Formula["lsphp81"].bin}/lsphp -q #{prefix}/admin/misc/htpasswd.php 123456`}" > #{prefix}/admin/conf/htpasswd`
     end
 
     def post_install
