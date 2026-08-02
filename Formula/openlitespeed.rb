@@ -65,6 +65,12 @@ class Openlitespeed < Formula
         inreplace "dist/admin/html.open/lib/DAttrBase.php",
                   "            if (get_magic_quotes_gpc()) {\n                $value = stripslashes($value);\n            }", ""
 
+        # Bitwise AND on a string value from a checkboxgroup/checkboxOr form
+        # throws TypeError in PHP 8 (string & int). Cast both operands to int.
+        inreplace "dist/admin/html.open/lib/DAttrBase.php",
+                  "if (($value & $val) || ($value === $val) || ($value === '0' && $val === 0))",
+                  "if (((int)$value & (int)$val) || ($value === $val) || ($value === '0' && $val === 0))"
+
         # Configurations
         get_user = `USERS`
         args = %W[
@@ -113,6 +119,7 @@ class Openlitespeed < Formula
             admin/logs
             admin/cgid
             admin/tmp
+            cgid
             Example/logs
         ]
 
