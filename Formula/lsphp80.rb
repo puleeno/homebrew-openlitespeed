@@ -32,7 +32,7 @@ class Lsphp80 < Formula
   depends_on "gettext"
   depends_on "glib"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@76"
   depends_on "krb5"
   depends_on "libffi"
   depends_on "libpq"
@@ -40,7 +40,7 @@ class Lsphp80 < Formula
   depends_on "libzip"
   depends_on "oniguruma"
   depends_on "openldap"
-  depends_on "openssl@1.1"
+  depends_on "openssl"
   depends_on "pcre2"
   depends_on "sqlite"
   depends_on "tidy-html5"
@@ -64,6 +64,26 @@ class Lsphp80 < Formula
       # Ensure that libxml2 will be detected correctly in older MacOS
       ENV["SDKROOT"] = MacOS.sdk_path if MacOS.version == :el_capitan || MacOS.version == :sierra
     end
+
+    # PHP 8.0 uses RSA_SSLV23_PADDING removed in OpenSSL 3.x
+    # RSA_PKCS1_PADDING is the equivalent replacement
+    ENV.append "CFLAGS", "-DRSA_SSLV23_PADDING=RSA_PKCS1_PADDING"
+
+    # PHPs get_col handlers take zend_ulong* (unsigned long long on arm64)
+    # while pdo_stmt_get_col_data_func declares size_t*. Both are 64-bit, so
+    # only the clang type name differs - silence the upgrade in newer Clang.
+    ENV.append "CFLAGS", "-Wno-incompatible-function-pointer-types"
+
+    # PHP 8.0's intl extension builds against ICU 76+ headers that require C++17
+    ENV["ICU_CXXFLAGS"] = "-std=c++17"
+
+    # ICU 76 changed operator== return type from UBool to bool
+    inreplace "ext/intl/breakiterator/codepointiterator_internal.h",
+      "virtual UBool operator==(const BreakIterator& that) const;",
+      "virtual bool operator==(const BreakIterator& that) const;"
+    inreplace "ext/intl/breakiterator/codepointiterator_internal.cpp",
+      "UBool CodePointBreakIterator::operator==(const BreakIterator& that) const",
+      "bool CodePointBreakIterator::operator==(const BreakIterator& that) const"
 
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
@@ -184,7 +204,7 @@ class Lsphp80 < Formula
       "extension_dir = \"#{HOMEBREW_PREFIX}/lib/php/pecl/#{orig_ext_dir}\""
 
     # Use OpenSSL cert bundle
-    openssl = Formula["openssl@1.1"]
+    openssl = Formula["openssl"]
     inreplace "php.ini-development", /; ?openssl\.cafile=/,
       "openssl.cafile = \"#{openssl.pkgetc}/cert.pem\""
     inreplace "php.ini-development", /; ?openssl\.capath=/,
