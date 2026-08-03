@@ -1,16 +1,14 @@
 class Openlitespeed < Formula
     desc "OpenLiteSpeed is a high-performance, lightweight, open source HTTP server developed and copyrighted by LiteSpeed Technologies. Users are free to download, use, distribute, and modify OpenLiteSpeed and its source code in accordance with the precepts of the GPLv3 license."
     homepage "https://openlitespeed.org/"
-    url "https://openlitespeed.org/packages/openlitespeed-1.4.51.src.tgz"
-    sha256 "3fb8163666ca9ce396d857eb84385e4ba278abfbf522fdf004528670bb233185"
+    url "https://github.com/litespeedtech/openlitespeed/archive/refs/tags/v1.5.12.tar.gz"
+    sha256 "3384d34cfa0bf7d60259afb1d3a4eb7519848fdab0b51fc668235dab65e22012"
 
     head "https://github.com/litespeedtech/openlitespeed.git"
-    version "1.4.51"
+    version "1.5.12"
 
     bottle do
-      root_url "https://ghcr.io/v2/puleeno/openlitespeed"
-      rebuild 2
-      sha256 cellar: :any, arm64_sonoma: "3bc4b3c05c0c38b2451ebf42631ec956090de15f08c70aaf9c40523e26d0b9a3"
+        sha256 cellar: :any, arm64_sonoma: "6096969cf7189fbb97cfbcd073fc74160a532a41627062de3b260ac589dc526e"
     end
 
     option "with-luajit", "use liblua (located in directory DIR, if supplied) for compiling mod_lua module.  [default=no]"
@@ -70,6 +68,20 @@ class Openlitespeed < Formula
         inreplace "dist/admin/html.open/lib/DAttrBase.php",
                   "if (($value & $val) || ($value === $val) || ($value === '0' && $val === 0))",
                   "if (((int)$value & (int)$val) || ($value === $val) || ($value === '0' && $val === 0))"
+
+        # -std=c++0x in AM_CPPFLAGS is passed to the C compiler as well, which
+        # newer clang rejects ("invalid argument '-std=c++0x' not allowed with
+        # 'C'"). Keep it in AM_CXXFLAGS only, where it still applies to C++.
+        inreplace "src/Makefile.in",
+                  "AM_CPPFLAGS = -std=c++0x ",
+                  "AM_CPPFLAGS = "
+
+        # The cache module's ShmCacheManager segfaults at startup on macOS
+        # (LsShm lock pool init leaves m_pShmLock NULL, then unlock() derefs
+        # NULL -> SIGSEGV). Drop the module from the default config so a fresh
+        # install boots cleanly.
+        inreplace "dist/conf/httpd_config.conf.in",
+                  /module cache \{\n.*?\n\}/m, ""
 
         # Configurations
         get_user = `USERS`
