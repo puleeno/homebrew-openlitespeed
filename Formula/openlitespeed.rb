@@ -8,6 +8,7 @@ class Openlitespeed < Formula
     version "1.5.12"
 
     bottle do
+        root_url "https://github.com/puleeno/homebrew-openlitespeed/releases/download/1.5.12"
         sha256 cellar: :any, arm64_sonoma: "6096969cf7189fbb97cfbcd073fc74160a532a41627062de3b260ac589dc526e"
     end
 
