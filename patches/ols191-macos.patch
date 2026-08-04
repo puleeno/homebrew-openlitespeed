@@ -1,0 +1,705 @@
+diff --git a/ax_path_lib_pcre.m4 b/ax_path_lib_pcre.m4
+index 543c9c2..2b4080e 100644
+--- a/ax_path_lib_pcre.m4
++++ b/ax_path_lib_pcre.m4
+@@ -60,9 +60,9 @@ if test ".$with_pcre" = ".no" ; then
+   m4_ifval($2,$2)
+ else
+   AC_MSG_RESULT([(testing)])
+-  AC_CHECK_LIB(pcre, pcre_study)
+-  if test "$ac_cv_lib_pcre_pcre_study" = "yes" ; then
+-     PCRE_LIBS="-lpcre"
++  AC_CHECK_LIB(pcre2-8, pcre2_compile_8)
++  if test "$ac_cv_lib_pcre2_8_pcre2_compile_8" = "yes" ; then
++     PCRE_LIBS="-lpcre2-8"
+      if test "$with_pcre" != "yes" ; then
+          PCRE_LDFLAGS="-L$with_pcre/$OPENLSWS_LIBDIR"
+          LDFLAGS="$LDFLAGS $PCRE_LDFLAGS"
+@@ -81,12 +81,12 @@ else
+      PCRE_LDFLAGS="-L$pcrevalue/$OPENLSWS_LIBDIR"
+      OLDLDFLAGS="$LDFLAGS" ; LDFLAGS="$LDFLAGS $PCRE_LDFLAGS"
+      OLDCPPFLAGS="$CPPFLAGS" ; CPPFLAGS="$CPPFLAGS -I$pcrevalue/include"
+-     AC_CHECK_LIB(pcre, pcre_compile)
++     AC_CHECK_LIB(pcre2-8, pcre2_compile_8)
+      CPPFLAGS="$OLDCPPFLAGS"
+      LDFLAGS="$OLDLDFLAGS"
+-     if test "$ac_cv_lib_pcre_pcre_compile" = "yes" ; then
+-        AC_MSG_RESULT(.setting PCRE_LIBS $PCRE_LDFLAGS -lpcre)
+-        PCRE_LIBS="$PCRE_LDFLAGS -lpcre"
++     if test "$ac_cv_lib_pcre2_8_pcre2_compile_8" = "yes" ; then
++        AC_MSG_RESULT(.setting PCRE_LIBS $PCRE_LDFLAGS -lpcre2-8)
++        PCRE_LIBS="$PCRE_LDFLAGS -lpcre2-8"
+         test -d "$pcrevalue/include" && PCRE_CFLAGS="-I$pcrevalue/include"
+         AC_MSG_CHECKING([$OPENLSWS_LIBDIR pcre])
+         AC_MSG_RESULT([$PCRE_LIBS])
+diff --git a/configure.ac b/configure.ac
+index 02235d4..f540a8c 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -311,7 +311,7 @@ AC_SUBST([OPENLSWS_BSSL])
+ 
+ 
+ 
+-CPPFLAGS=" -I$srcdir/ssl/include $CPPFLAGS -I../../src -I../../include -I/usr/local/include -I/usr/local -I/usr -I/usr/pkg -DUSE_BORINGSSL=1 "
++CPPFLAGS=" -I\$(top_srcdir)/ssl/include -I\$(top_srcdir)/src/lshpack -I\$(top_srcdir)/src/liblsquic/ls-qpack $CPPFLAGS -I../../src -I../../include -I/usr/local/include -I/usr/local -I/usr -I/usr/pkg -DUSE_BORINGSSL=1 -DHAVE_BORINGSSL "
+ BSSL=`. $srcdir/dlbssl.sh "$OPENLSWS_BSSL"`
+ echo "BoringSSL files copied to $srcdir/ssl/ from $OPENLSWS_BSSL."
+ 
+@@ -462,7 +462,6 @@ fi
+ 
+ #For Mac OS, add special falgs for LuaJit
+ if test "$OSNAME" = Darwin ; then
+-    LDFLAGS="$LDFLAGS -Wl,-export_dynamic -pagezero_size 10000 -image_base 100000000"
+     RT_LIB_OPTION=
+ fi
+ 
+@@ -477,6 +476,7 @@ AC_SUBST([RT_LIB_OPTION])
+ 
+ MODULE_VERSION_INFO=`. $srcdir/modverinfo.sh`
+ AC_DEFINE_UNQUOTED([LS_MODULE_VERSION_INFO], ["$MODULE_VERSION_INFO"], [The pre-defined modules version info])
++AC_DEFINE_UNQUOTED([LS_MODULE_VERSION_INFO_ONELINE], ["$MODULE_VERSION_INFO"], [The pre-defined modules version info one-line])
+ 
+ AC_CONFIG_FILES(Makefile
+                 support/Makefile
+diff --git a/dist/functions.sh b/dist/functions.sh
+index c22f6f7..71e3f8f 100755
+--- a/dist/functions.sh
++++ b/dist/functions.sh
+@@ -577,7 +577,7 @@ engine.
+ EOF
+ 
+     SUCC=0
+-    SETUP_PHP=1
++    SETUP_PHP=0
+     printf "%s" "Setup up PHP [Y/n]: "
+     read TMP_YN
+     if [ "x$TMP_YN" != "x" ]; then
+diff --git a/dist/install.sh b/dist/install.sh
+index f013dbd..16bae32 100755
+--- a/dist/install.sh
++++ b/dist/install.sh
+@@ -243,7 +243,7 @@ IS_LSCPD=$9
+ 
+ detectdlcmd
+ VERSION=open
+-SETUP_PHP=1
++SETUP_PHP=0
+ PHP_SUFFIX="php"
+ SSL_HOSTNAME=webadmin
+ 
+@@ -259,7 +259,7 @@ if [ "$WS_GROUP" = "nobody" ] ; then
+ fi
+ 
+ 
+-PHP_INSTALLED=n
++PHP_INSTALLED=y
+ INSTALL_TYPE="reinstall"
+ if [ -f "$LSWS_HOME/conf/httpd_config.xml" ] ; then
+ 
+@@ -280,7 +280,8 @@ if [ -f "$LSWS_HOME/conf/httpd_config.xml" ] ; then
+     echo
+     
+     echo -e "\033[38;5;148m$LSWS_HOME/conf/httpd_config.xml exists, will be converted to $LSWS_HOME/conf/httpd_config.conf!\033[39m"
+-    inst_admin_php
++    echo "Disable PHP-Builtin"
++#inst_admin_php
+     PHP_INSTALLED=y
+     
+     if [ -e "$LSWS_HOME/conf/httpd_config.conf" ] ; then
+@@ -366,7 +367,8 @@ if [ "x$IS_LSCPD" != "xyes" ] ; then
+     installation
+     
+     if [ "x$PHP_INSTALLED" = "xn" ] ; then 
+-        inst_admin_php
++        echo "Disable PHP-Builtin"
++#inst_admin_php
+     fi
+     rm $LSWS_HOME/bin/lshttpd
+     ln -sf ./openlitespeed $LSWS_HOME/bin/lshttpd
+@@ -385,7 +387,7 @@ if [ "x$IS_LSCPD" != "xyes" ] ; then
+         fi
+         
+         if [ "x$USE_LSPHP7" = "xyes" ] ; then
+-            inst_lsphp7
++            echo "Skip inst_lsphp7"
+             if [ -f "$LSWS_HOME/fcgi-bin/lsphp7" ]; then
+                 rm "$LSWS_HOME/fcgi-bin/lsphp"
+                 ln -sf "$LSWS_HOME/fcgi-bin/lsphp7" "$LSWS_HOME/fcgi-bin/lsphp" 
+@@ -423,7 +425,8 @@ else
+             ln -sf "$LSWS_HOME/fcgi-bin/lsphp7" "$LSWS_HOME/fcgi-bin/lsphp" 
+         else
+             mkdir -p $LSWS_HOME/admin/fcgi-bin
+-            inst_admin_php
++            echo "Disable PHP-Builtin"
++#inst_admin_php
+             mv "$LSWS_HOME/admin/fcgi-bin/admin_php" "$LSWS_HOME/fcgi-bin/lsphp"
+             rm -rf $LSWS_HOME/admin/fcgi-bin
+         fi
+diff --git a/include/lsr/ls_atomic.h b/include/lsr/ls_atomic.h
+index 02598d4..72c1525 100644
+--- a/include/lsr/ls_atomic.h
++++ b/include/lsr/ls_atomic.h
+@@ -25,8 +25,8 @@
+  * @file
+  */
+ 
+-#if defined(__aarch64__)
+-#include <bits/types.h>
++#if defined(__aarch64__) && defined(__linux__)
++#include <stdint.h>
+ #endif
+ 
+ #define ls_atomic_inline ls_always_inline
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 28d72bd..4a93c32 100755
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -70,10 +70,12 @@ openlitespeed_SOURCES = modules/prelinkedmods.cpp httpdtest.cpp main.cpp \
+    lsr/ls_dlinkq.c \
+    lsr/ls_fileio.c \
+    lsr/ls_hash.c \
+-   lsr/ls_lfqueue.c \
+-   lsr/ls_lfstack.c \
+-   lsr/ls_link.c \
+-   lsr/ls_lock.c \
++lsr/ls_lfqueue.c \
++    lsr/ls_lfstack.c \
++    lsr/ls_link.c \
++    lsr/ls_llmq.c \
++    lsr/ls_llxq.c \
++    lsr/ls_lock.c \
+    lsr/ls_loopbuf.c \
+    lsr/ls_map.c \
+    lsr/ls_md5.c \
+@@ -85,8 +87,9 @@ openlitespeed_SOURCES = modules/prelinkedmods.cpp httpdtest.cpp main.cpp \
+    lsr/ls_ptrlist.c \
+    lsr/ls_sha1.c \
+    lsr/ls_shm.cpp \
+-   lsr/ls_stack.c \
+-   lsr/ls_str.c \
++lsr/ls_stack.c \
++    lsr/ls_stopwatch.c \
++    lsr/ls_str.c \
+    lsr/ls_strlist.c \
+    lsr/ls_strtool.c \
+    lsr/ls_time.c \
+@@ -110,16 +113,16 @@ openlitespeed_LDADD =  ./main/libmain.a ./http/libhttp.a \
+         ./sslpp/libsslpp.a  ./ssi/libssi.a ./edio/libedio.a ./lsiapi/liblsiapi.a \
+         ./modules/libmodules.a ./shm/liblsshm.a  ./adns/libadns.a \
+         ./h2/libh2.a \
+-        ./quic/libquic.a ./liblsquic/liblsquic.a ./spdy/libspdy.a \
++         ./quic/libquic.a ./liblsquic/liblsquic.a \
+         $(LIBBROTLI) $(LIBMMDB) $(EXTRA_LIBS) \
+         $(AM_OPENSSL_LIBS) $(EXPAT_LIBS)  $(PCRE_LIBS) ${IP2LOCATION_LIBS} \
+-        -ludns -lcrypt -lbcrypt -lz -lexpat -lpthread $(DL_LIB_OPTION) $(RT_LIB_OPTION)
++        -ludns $(top_srcdir)/third-party/lib/libbcrypt.a -lz -lexpat -lpthread $(DL_LIB_OPTION) $(RT_LIB_OPTION)
+ 
+-AM_LDFLAGS = $(OPENSSL_LDFLAGS) -L/usr/lib -L/usr/local/lib -L/usr/lib64  
+-AM_CPPFLAGS = -std=c++0x -I$(top_srcdir)/ssl/include/ -I$(top_srcdir)/src/lshpack  -I$(top_srcdir)/src/liblsquic/ls-qpack -I$(top_srcdir)/include -I$(top_srcdir)/src  $(PCRE_CFLAGS) $(EXPAT_CFLAGS)
+-AM_CXXFLAGS = -std=c++0x
++AM_LDFLAGS = $(OPENSSL_LDFLAGS) -L/usr/lib -L/usr/local/lib -L/usr/lib64 -L$(top_srcdir)/third-party/lib
++AM_CPPFLAGS = -I$(top_srcdir)/ssl/include/ -I$(top_srcdir)/src/lshpack  -I$(top_srcdir)/src/liblsquic/ls-qpack -I$(top_srcdir)/include -I$(top_srcdir)/src  $(PCRE_CFLAGS) $(EXPAT_CFLAGS)
++AM_CXXFLAGS = -std=c++17
+ 
+-SUBDIRS =  socket http h2 spdy sslpp ssi extensions log4cxx main edio lsiapi  modules shm adns quic liblsquic
++SUBDIRS =  socket http h2 sslpp ssi extensions log4cxx main edio lsiapi  modules shm adns quic liblsquic
+ 
+ 
+ # the library search path.
+diff --git a/src/edio/Makefile.am b/src/edio/Makefile.am
+index 307bc16..d43e91e 100755
+--- a/src/edio/Makefile.am
++++ b/src/edio/Makefile.am
+@@ -1,11 +1,10 @@
+ noinst_LIBRARIES = libedio.a
+-AM_CPPFLAGS =  -I$(top_srcdir)/openssl/include/ -I$(top_srcdir)/include -I$(top_srcdir)/src -I$(top_srcdir)/src/edio/liburing/include/
++AM_CPPFLAGS =  -I$(top_srcdir)/openssl/include/ -I$(top_srcdir)/include -I$(top_srcdir)/src
+ libedio_a_METASOURCES = AUTO
+ 
+-libedio_a_SOURCES =    reactorindex.cpp fdindex.cpp kqueuer.cpp epoll.cpp rtsigio.cpp ediostream.cpp outputbuf.cpp cacheos.cpp \
++libedio_a_SOURCES =   reactorindex.cpp fdindex.cpp kqueuer.cpp epoll.cpp rtsigio.cpp ediostream.cpp outputbuf.cpp cacheos.cpp \
+    inputstream.cpp bufferedos.cpp outputstream.cpp flowcontrol.cpp iochain.cpp multiplexerfactory.cpp eventreactor.cpp poller.cpp \
+    multiplexer.cpp pollfdreactor.cpp lookupfd.cpp devpoller.cpp aioeventhandler.cpp sigeventdispatcher.cpp aiooutputstream.cpp \
+-   aiosendfile.cpp eventnotifier.cpp eventprocessor.cpp evtcbque.cpp linuxaioctx.cpp \
+-   iouring.cpp liburing/queue.c liburing/register.c liburing/setup.c liburing/syscall.c asynciovs.cpp
++   aiosendfile.cpp eventnotifier.cpp eventprocessor.cpp evtcbque.cpp ssledstream.cpp lsaioreq.cpp lsposixaioreq.cpp
+    
+    
+diff --git a/src/edio/aiooutputstream.cpp b/src/edio/aiooutputstream.cpp
+index aa13d94..8f239c6 100644
+--- a/src/edio/aiooutputstream.cpp
++++ b/src/edio/aiooutputstream.cpp
+@@ -40,7 +40,9 @@
+ #include <edio/multiplexer.h>
+ #include <edio/kqueuer.h>
+ #include <sys/param.h>
++#if defined(__FreeBSD__)
+ #include <sys/linker.h>
++#endif
+ 
+ /* aio.ko no longer used 
+ static short s_iAiokoLoaded = -1;
+@@ -215,9 +217,10 @@ int AioOutputStream::onEvent()
+ 
+ int AioOutputStream::flush()
+ {
++    int ret = LS_OK;
+ #if defined(LS_AIO_USE_AIO)
+     ls_mutex_lock(&m_mutex);
+-    int ret = flushEx();
++    ret = flushEx();
+     ls_mutex_unlock(&m_mutex);
+ #endif // defined(LS_AIO_USE_AIO)
+     return ret;
+diff --git a/src/edio/lsposixaioreq.cpp b/src/edio/lsposixaioreq.cpp
+index b83bfab..90efee9 100644
+--- a/src/edio/lsposixaioreq.cpp
++++ b/src/edio/lsposixaioreq.cpp
+@@ -25,8 +25,10 @@
+ #include <edio/multiplexer.h>
+ #include <edio/kqueuer.h>
+ #include <sys/param.h>
++#if defined(__FreeBSD__)
+ #include <sys/linker.h>
+ #endif
++#endif
+ 
+ #include <errno.h>
+ #include <poll.h>
+@@ -217,6 +219,8 @@ int LsPosixAioReq::onEvent()
+ int LsPosixAioReq::onAioEvent()
+ #elif defined(LS_AIO_USE_SIGNAL)
+ int LsPosixAioReq::onEvent()
++#else
++int LsPosixAioReq::onEvent()
+ #endif
+ {
+     LS_DBG(getLogSession(), "LsPosixAioReq::onEvent: %p", this);
+diff --git a/src/extensions/Makefile.am b/src/extensions/Makefile.am
+index 1370703..4dbb9fc 100755
+--- a/src/extensions/Makefile.am
++++ b/src/extensions/Makefile.am
+@@ -6,14 +6,17 @@ AM_CPPFLAGS =  -I$(top_srcdir)/openssl/include/ -I$(top_srcdir)/include -I$(top_
+ libextensions_a_METASOURCES = AUTO
+ 
+ libextensions_a_SOURCES = loadbalancer.cpp localworkerconfig.cpp localworker.cpp pidlist.cpp iprocessortimer.cpp httpextprocessor.cpp \
+-  extrequest.cpp extworker.cpp extconn.cpp extworkerconfig.cpp l4conn.cpp \
++  extrequest.cpp extworker.cpp extconn.cpp extworkerconfig.cpp \
+   cgi/lscgid.cpp cgi/suexec.cpp cgi/cgidreq.cpp cgi/cgidconfig.cpp cgi/cgidworker.cpp cgi/cgidconn.cpp cgi/cgroupconn.cpp cgi/cgroupuse.cpp \
+   cgi/use_bwrap.c cgi/ns.c cgi/nsopts.c cgi/nspersist.c cgi/nsutils.c \
+   fcgi/fcgienv.cpp fcgi/fcgiappconfig.cpp fcgi/fcgiapp.cpp fcgi/fcginamevaluepair.cpp fcgi/fcgiconnection.cpp fcgi/fcgirecord.cpp \
+   jk/jkajp13.cpp jk/jworker.cpp jk/jworkerconfig.cpp jk/jconn.cpp \
+   proxy/proxyconfig.cpp proxy/proxyworker.cpp proxy/proxyconn.cpp \
++  scgi/scgiapp.cpp scgi/scgiappconfig.cpp scgi/scgiconnection.cpp scgi/scgienv.cpp \
++  uwsgi/uwsgiapp.cpp uwsgi/uwsgiappconfig.cpp uwsgi/uwsgiconnection.cpp uwsgi/uwsgienv.cpp \
+   registry/extappregistry.cpp registry/appconfig.cpp\
+-  lsapi/lsapiworker.cpp lsapi/lsapireq.cpp lsapi/lsapiconn.cpp lsapi/lsapiconfig.cpp 
++  lsapi/lsapiworker.cpp lsapi/lsapireq.cpp lsapi/lsapiconn.cpp lsapi/lsapiconfig.cpp \
++  ssl4conn.cpp 
+ 
+ ####### kdevelop will overwrite this part!!! (end)############
+ #noinst_HEADERS = localworkerconfig.h localworker.h loadbalancer.h
+diff --git a/src/extensions/cgi/lscgid.cpp b/src/extensions/cgi/lscgid.cpp
+index 2ab1e88..5f31a93 100644
+--- a/src/extensions/cgi/lscgid.cpp
++++ b/src/extensions/cgi/lscgid.cpp
+@@ -835,12 +835,14 @@ static int process_req_data(lscgid_t *cgi_req)
+                 --cgi_req->m_data.m_nenv;
+                 cgi_req->m_cgroup = strtol(p + 10, NULL, 10);
+             }
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__)
+             else if (strncasecmp(p, "LS_NS=", LS_NS_LEN + 1) == 0)
+             {
+                 --i;
+                 --cgi_req->m_data.m_nenv;
+                 cgi_req->m_ns = strtol(p + LS_NS_LEN + 1, NULL, 10);
+             }
++#endif
+         }
+         p += len;
+         if (p > pEnd)
+@@ -1014,7 +1016,9 @@ static int new_conn(int fd)
+     pid = fork();
+     if (!pid)
+     {
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__)
+         nspersist_socket_watcher_forked_child();
++#endif
+         child_main(fd);
+     }
+     close(fd);
+@@ -1029,12 +1033,8 @@ static int s_got_sigchild = 0;
+ 
+ 
+ static void processSigchild();
+-static int start_socket_watcher();
+-static void schedule_socket_watcher_restart(int reset_if_stable,
+-                                            int immediate_allowed);
+-static void schedule_socket_watcher_after_reap(int status);
+-
+ 
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__)
+ static int start_socket_watcher()
+ {
+     if (!s_ns_enabled || s_ns_watcher_disabled)
+@@ -1119,6 +1119,7 @@ static void schedule_socket_watcher_after_reap(int status)
+ 
+     schedule_socket_watcher_restart(reset_if_stable, immediate_allowed);
+ }
++#endif
+ 
+ 
+ static int run(int fdServerSock)
+@@ -1145,8 +1146,10 @@ static int run(int fdServerSock)
+         }
+         if (s_got_sigchild)
+             processSigchild();
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__)
+         if (s_ns_watcher_next_restart && time(NULL) >= s_ns_watcher_next_restart)
+             start_socket_watcher();
++#endif
+     }
+     return 0;
+ }
+@@ -1185,11 +1188,13 @@ static void processSigchild()
+             //    continue;
+             break;
+         }
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__)
+         if (nspersist_socket_watcher_reaped(status[0]))
+         {
+             schedule_socket_watcher_after_reap(status[1]);
+             continue;
+         }
++#endif
+         if (s_fdControl != -1)
+             write(s_fdControl, status, sizeof(status));
+         if (WIFSIGNALED(status[1]))
+diff --git a/src/h2/Makefile.am b/src/h2/Makefile.am
+index 7cae2c8..4535a02 100755
+--- a/src/h2/Makefile.am
++++ b/src/h2/Makefile.am
+@@ -1,6 +1,8 @@
+ noinst_LIBRARIES = libh2.a
+ 
+-INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/src
++INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/src -I$(top_srcdir)/src/lshpack -I$(top_srcdir)/src/lshpack/deps/xxhash -I$(top_srcdir)/src/liblsquic/ls-qpack
++
++AM_CPPFLAGS = -DXXH_HEADER_NAME='"xxhash.h"'
+ 
+ libh2_a_METASOURCES = AUTO
+ 
+diff --git a/src/http/Makefile.am b/src/http/Makefile.am
+index 03aab84..23fab53 100755
+--- a/src/http/Makefile.am
++++ b/src/http/Makefile.am
+@@ -3,6 +3,8 @@ noinst_LIBRARIES = libhttp.a
+ 
+ libhttp_a_METASOURCES = AUTO
+ 
++AM_CPPFLAGS = -I$(top_srcdir)/src/lshpack -I$(top_srcdir)/src/liblsquic/ls-qpack
++
+ libhttp_a_SOURCES = httpstatuscode.cpp moduserdir.cpp contextnode.cpp phpconfig.cpp pipeappender.cpp awstats.cpp rewriterulelist.cpp throttlecontrol.cpp \
+    rewriteengine.cpp rewritemap.cpp rewriterule.cpp reqstats.cpp hotlinkctrl.cpp contextlist.cpp urimatch.cpp expiresctrl.cpp stderrlogger.cpp \
+    htauth.cpp userdir.cpp authuser.cpp  httplistenerlist.cpp httpvhostlist.cpp htpasswd.cpp httphandler.cpp httplogsource.cpp  accesslog.cpp \
+@@ -13,7 +15,7 @@ libhttp_a_SOURCES = httpstatuscode.cpp moduserdir.cpp contextnode.cpp phpconfig.
+    httpvhost.cpp httpresourcemanager.cpp ntwkiolink.cpp httpmethod.cpp httpver.cpp  httpstatusline.cpp httpheader.cpp \
+    smartsettings.cpp httplistener.cpp httpresp.cpp httpreq.cpp httpsession.cpp moov.cpp  hiostream.cpp hiohandlerfactory.cpp \
+    httprespheaders.cpp l4handler.cpp httpaiosendfile.cpp serverprocessconfig.cpp httpstats.cpp reqparser.cpp subrequest.cpp hiochainstream.cpp \
+-   iptoloc.cpp iptogeo2.cpp recaptcha.cpp  httpsessioniouring.cpp httpsessionasync.cpp httpsessionlinuxaio.cpp
++   iptoloc.cpp iptogeo2.cpp recaptcha.cpp expression.cpp useacme.cpp
+ 
+ 
+ ####### kdevelop will overwrite this part!!! (end)############
+diff --git a/src/http/useacme.cpp b/src/http/useacme.cpp
+index 5376f62..abdba79 100644
+--- a/src/http/useacme.cpp
++++ b/src/http/useacme.cpp
+@@ -486,7 +486,8 @@ int AcmeCertMap::acmeRequest(char *acmeFile, char *desc, char * const *argv,
+         snprintf(serverEnv, sizeof(serverEnv), "ACME_DIRECTORY=%s", UseAcme::getServer());
+         char *p = env ? strdup(env) : NULL;
+         int count = envCount(p);
+-        const char *envp[4 + count] = { configEnv, acmeEnv, serverEnv };
++        const char **envp = (const char **)alloca((4 + count) * sizeof(char *));
++        envp[0] = configEnv; envp[1] = acmeEnv; envp[2] = serverEnv;
+         int index = 3;
+         for (int i = 0; i < count; i++)
+         {
+diff --git a/src/lsr/ls_lfqueue.c b/src/lsr/ls_lfqueue.c
+index 0a646b0..70a5439 100644
+--- a/src/lsr/ls_lfqueue.c
++++ b/src/lsr/ls_lfqueue.c
+@@ -34,6 +34,7 @@
+ 
+ static inline int do_wait(void *volatile *ptr, struct timespec *timeout)
+ {
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__)
+     int ret = 0;
+     if (ls_futex_wait((int *)ptr, 0, timeout) < 0)
+     {
+@@ -45,14 +46,21 @@ static inline int do_wait(void *volatile *ptr, struct timespec *timeout)
+ #endif
+     }
+     return ret;
++#else
++    return -1;
++#endif
+ }
+ 
+ 
+ static inline void do_wake(void *volatile *ptr)
+ {
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__)
+     int retry = 3;
+     while ((ls_futex_wake((int *)ptr) < 1) && --retry > 0)
+         ;
++#else
++    (void)ptr;
++#endif
+     return;
+ }
+ 
+diff --git a/src/lsr/ls_llmq.c b/src/lsr/ls_llmq.c
+index 530532f..29c4c76 100644
+--- a/src/lsr/ls_llmq.c
++++ b/src/lsr/ls_llmq.c
+@@ -84,6 +84,8 @@ static inline int do_wait(ls_atom_uint_t *pCnt, ls_atom_uint_t *pIndx,
+ {
+     int ret = 0;
+     ls_atomic_add((int *)pCnt, 1);
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__) \
++    || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+     if (ls_futex_wait((int *)pIndx, val, timeout) < 0)
+     {
+         if ((errno == ETIMEDOUT) || (errno == EINVAL))
+@@ -95,6 +97,12 @@ static inline int do_wait(ls_atom_uint_t *pCnt, ls_atom_uint_t *pIndx,
+                    val);
+ #endif
+     }
++#else
++    (void)pIndx;
++    (void)val;
++    (void)timeout;
++    ret = -1;
++#endif
+     ls_atomic_sub((int *)pCnt, 1);
+     return ret;
+ }
+@@ -122,10 +130,16 @@ static inline void do_wake(int cnt, ls_atom_uint_t *ptr, char *msg,
+ #else
+ static inline void do_wake(int cnt, ls_atom_uint_t *ptr)
+ {
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__) \
++    || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+     int retry = 5;
+     while (ls_futex_wake_n((int *)ptr, cnt) < 1
+            && (--retry > 0))
+         ;
++#else
++    (void)cnt;
++    (void)ptr;
++#endif
+     return;
+ }
+ #endif
+diff --git a/src/lsr/ls_llxq.c b/src/lsr/ls_llxq.c
+index d7b5d55..222841b 100644
+--- a/src/lsr/ls_llxq.c
++++ b/src/lsr/ls_llxq.c
+@@ -111,6 +111,8 @@ static inline int do_wait(ls_atom_uint_t *pCnt, ls_atom_uint_t *pIndx,
+ {
+     int ret = 0;
+     ls_atomic_add((int *)pCnt, 1);
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__) \
++    || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+     if (ls_futex_wait((int *)pIndx, val, timeout) < 0)
+     {
+         if ((errno == ETIMEDOUT) || (errno == EINVAL))
+@@ -122,6 +124,12 @@ static inline int do_wait(ls_atom_uint_t *pCnt, ls_atom_uint_t *pIndx,
+                    val);
+ #endif
+     }
++#else
++    (void)pIndx;
++    (void)val;
++    (void)timeout;
++    ret = -1;
++#endif
+     ls_atomic_sub((int *)pCnt, 1);
+     return ret;
+ }
+@@ -148,9 +156,15 @@ static inline void do_wake(int cnt, ls_atom_uint_t *ptr, char *msg,
+ #else
+ static inline void do_wake(int cnt, ls_atom_uint_t *ptr)
+ {
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__) \
++    || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+     int retry = 5;
+     while (ls_futex_wake_n((int *)ptr, cnt) < 1 && --retry > 0)
+         ;
++#else
++    (void)cnt;
++    (void)ptr;
++#endif
+     return;
+ }
+ #endif
+diff --git a/src/main/Makefile.am b/src/main/Makefile.am
+index 9d53380..1d9eaeb 100755
+--- a/src/main/Makefile.am
++++ b/src/main/Makefile.am
+@@ -1,7 +1,7 @@
+ ####### kdevelop will overwrite this part!!! (begin)##########
+ noinst_LIBRARIES = libmain.a
+ 
+-AM_CPPFLAGS =  -I$(top_srcdir)/openssl/include/ -I$(top_srcdir)/include -I$(top_srcdir)/src
++AM_CPPFLAGS =  -I$(top_srcdir)/openssl/include/ -I$(top_srcdir)/include -I$(top_srcdir)/src -I$(top_srcdir)/src/lshpack -I$(top_srcdir)/src/liblsquic/ls-qpack
+ 
+ libmain_a_METASOURCES = AUTO
+ 
+diff --git a/src/main/lshttpdmain.cpp b/src/main/lshttpdmain.cpp
+index 29be4e5..8548cac 100644
+--- a/src/main/lshttpdmain.cpp
++++ b/src/main/lshttpdmain.cpp
+@@ -1918,9 +1918,15 @@ static long getProcessNameStartTime(int pid, char *proc_name)
+     if (sysctl(mib, 4, &kp, &len, NULL, 0) != 0) {
+         return -1;
+     }
++#if defined(macintosh) || defined(__APPLE__) || defined(__APPLE_CC__)
++    memccpy(proc_name, kp.kp_proc.p_comm, 0, MAXCOMLEN + 1);
++
++    return kp.kp_proc.p_starttime.tv_sec;
++#else
+     memccpy(proc_name, kp.ki_comm, 0, COMMLEN + 1);
+ 
+     return kp.ki_start.tv_sec;
++#endif
+ }
+ #endif
+ 
+diff --git a/src/modules/cache/dirhashcacheentry.cpp b/src/modules/cache/dirhashcacheentry.cpp
+index 1e57539..6e239f3 100644
+--- a/src/modules/cache/dirhashcacheentry.cpp
++++ b/src/modules/cache/dirhashcacheentry.cpp
+@@ -130,6 +130,8 @@ int DirHashCacheEntry::allocate(int size)
+         return LS_FAIL;
+     if (st.st_size < size)
+     {
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__) \
++    || defined(__FreeBSD__) || defined(__OpenBSD__)
+         if ((errno = posix_fallocate(fd, st.st_size,
+                                      size - st.st_size)) != 0)
+         {
+@@ -137,6 +139,10 @@ int DirHashCacheEntry::allocate(int size)
+                 return ftruncate(fd, size);
+             return LS_FAIL;
+         }
++#else
++        if (ftruncate(fd, size) == -1)
++            return LS_FAIL;
++#endif
+     }
+     return 0;
+ }
+diff --git a/src/quic/udplistener.cpp b/src/quic/udplistener.cpp
+index e66a0c8..b83ec4a 100644
+--- a/src/quic/udplistener.cpp
++++ b/src/quic/udplistener.cpp
+@@ -1652,7 +1652,7 @@ int UdpListener::setSockOptions(int fd)
+     if (ret != 0)
+         return -1;
+ 
+-#if __linux__
++#if defined(__linux__)
+ #if !defined(IP_RECVORIGDSTADDR)
+     /* Need to set IP_PKTINFO for sending */
+     if (AF_INET == m_addr.get()->sa_family)
+@@ -1665,6 +1665,17 @@ int UdpListener::setSockOptions(int fd)
+         }
+     }
+ #endif
++#elif defined(macintosh) || defined(__APPLE__) || defined(__APPLE_CC__)
++    /* Need to set IP_PKTINFO for sending */
++    if (AF_INET == m_addr.get()->sa_family)
++    {
++        val = 1;
++        ret = setsockopt(fd, IPPROTO_IP, IP_PKTINFO, &val, sizeof(val));
++        if (0 != ret)
++        {
++            return -1;
++        }
++    }
+ #elif IP_RECVDSTADDR != IP_SENDSRCADDR
+     /* On FreeBSD, IP_RECVDSTADDR is the same as IP_SENDSRCADDR, but I do not
+      * know about other BSD systems.
+diff --git a/src/shm/lsshm.cpp b/src/shm/lsshm.cpp
+index 896b479..0b5f4db 100644
+--- a/src/shm/lsshm.cpp
++++ b/src/shm/lsshm.cpp
+@@ -47,11 +47,14 @@ extern "C" {
+  */
+ int ls_expandfile(int fd, LsShmOffset_t fromsize, LsShmXSize_t incrsize)
+ {
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__) \
++    || defined(__FreeBSD__) || defined(__OpenBSD__)
+     errno = posix_fallocate(fd, (off_t)fromsize, incrsize);
+     if (errno == 0)
+         return 0;
+     if (errno != EINVAL && errno != EOPNOTSUPP)
+         return LS_FAIL;
++#endif
+     LsShmOffset_t fromloc;
+     int pagesize = getpagesize();
+     LsShmOffset_t newsize = fromsize + incrsize;
+diff --git a/src/thread/workcrew.cpp b/src/thread/workcrew.cpp
+index 534005e..c301cc8 100644
+--- a/src/thread/workcrew.cpp
++++ b/src/thread/workcrew.cpp
+@@ -333,7 +333,13 @@ void WorkCrew::stopProcessing(int disard)
+         int ret = 0;
+         //LS_TH_BENIGN(&m_stateFutex, "ok read");
+         do {
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__) \
++    || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+             ret = ls_futex_wait_priv(&m_stateFutex, STOPPING, &timeout);
++#else
++            sched_yield();
++            ret = 1;
++#endif
+         } while (0 == ret && STOPPING == ls_atomic_value(&m_stateFutex));
+         //LS_TH_FLUSH();
+ 
+@@ -440,7 +446,10 @@ void WorkCrew::workerDied(CrewWorker *pWorker)
+         {
+             //LS_TH_BENIGN(&m_stateFutex, "ok set");
+             ls_atomic_setint(&m_stateFutex, STOPPED);
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__) \
++    || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+             ls_futex_wakeall_priv(&m_stateFutex);
++#endif
+             //LS_TH_FLUSH();
+         }
+     }
+diff --git a/src/util/vmembuf.cpp b/src/util/vmembuf.cpp
+index 5d6c1d5..6a8e998 100644
+--- a/src/util/vmembuf.cpp
++++ b/src/util/vmembuf.cpp
+@@ -776,6 +776,8 @@ int VMemBuf::mapNextWBlock()
+ 
+ static int expand_file(int fd, off_t offset, size_t size)
+ {
++#if defined(linux) || defined(__linux) || defined(__linux__) || defined(__gnu_linux__) \
++    || defined(__FreeBSD__) || defined(__OpenBSD__)
+     errno = posix_fallocate(fd, offset, size);
+     if (errno == 0)
+         return 0;
+@@ -784,6 +786,9 @@ static int expand_file(int fd, off_t offset, size_t size)
+         return ftruncate(fd, offset + size);
+     }
+     return -1;
++#else
++    return ftruncate(fd, offset + size);
++#endif
+ }
+ 
+ 

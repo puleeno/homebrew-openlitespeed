@@ -1,0 +1,12 @@
+diff --git a/src/liblsquic/Makefile.am b/src/liblsquic/Makefile.am
+index 3491482..f945514 100644
+--- a/src/liblsquic/Makefile.am
++++ b/src/liblsquic/Makefile.am
+@@ -1,6 +1,6 @@
+ noinst_LIBRARIES = liblsquic.a
+ 
+-AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src -I$(top_srcdir)/src/lsr -I$(top_srcdir)/src/liblsquic/ls-qpack -I$(top_srcdir)/src/spdy/
++AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src -I$(top_srcdir)/src/lsr -I$(top_srcdir)/src/liblsquic/ls-qpack -I$(top_srcdir)/src/lshpack -I$(top_srcdir)/src/lshpack/deps/xxhash -I$(top_srcdir)/src/liblsquic/ls-qpack
+ 
+ 
+ liblsquic_a_METASOURCES = AUTO

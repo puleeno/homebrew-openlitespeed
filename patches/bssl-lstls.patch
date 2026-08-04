@@ -1,0 +1,126 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1529526b2..a393b7d7f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -140,7 +140,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CLANG)
+   # Note clang-cl is odd and sets both CLANG and MSVC. We base our configuration
+   # primarily on our normal Clang one.
+   # TODO(bbe) took out -Wmissing-field-initializers for pki - fix and put back or disable only for pki
+-  set(C_CXX_FLAGS "-Werror -Wformat=2 -Wsign-compare -Wwrite-strings -Wvla -Wshadow -Wtype-limits")
++  set(C_CXX_FLAGS "-Wformat=2 -Wsign-compare -Wwrite-strings -Wvla -Wshadow -Wtype-limits")
+   if(MSVC)
+     # clang-cl sets different default warnings than clang. It also treats -Wall
+     # as -Weverything, to match MSVC. Instead -W3 is the alias for -Wall.
+diff --git a/crypto/fipsmodule/rand/fork_detect_test.cc b/crypto/fipsmodule/rand/fork_detect_test.cc
+index ab4851276..cae3cb596 100644
+--- a/crypto/fipsmodule/rand/fork_detect_test.cc
++++ b/crypto/fipsmodule/rand/fork_detect_test.cc
+@@ -12,6 +12,7 @@
+  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+ 
++#include <cinttypes>
+ #include <openssl/base.h>
+ 
+ // TSAN cannot cope with this test and complains that "starting new threads
+diff --git a/include/openssl/ssl.h b/include/openssl/ssl.h
+index 9f758ca7b..f5bfb56d9 100644
+--- a/include/openssl/ssl.h
++++ b/include/openssl/ssl.h
+@@ -4015,6 +4015,11 @@ OPENSSL_EXPORT int SSL_CTX_get_ex_new_index(long argl, void *argp,
+ 
+ // Low-level record-layer state.
+ 
++OPENSSL_EXPORT EVP_AEAD_CTX *SSL_get_write_aead_ctx(SSL *ssl);
++OPENSSL_EXPORT const uint8_t *SSL_get_write_iv_sequence(SSL *ssl,
++                                                        uint64_t **sequence,
++                                                        char *noad);
++
+ // SSL_get_ivs sets |*out_iv_len| to the length of the IVs for the ciphers
+ // underlying |ssl| and sets |*out_read_iv| and |*out_write_iv| to point to the
+ // current IVs for the read and write directions. This is only meaningful for
+diff --git a/ssl/internal.h b/ssl/internal.h
+index fa35073fa..b84cf00d9 100644
+--- a/ssl/internal.h
++++ b/ssl/internal.h
+@@ -888,7 +888,11 @@ class SSLAEADContext {
+ 
+   bool GetIV(const uint8_t **out_iv, size_t *out_iv_len) const;
+ 
+- private:
++  EVP_AEAD_CTX *Get_evp_aead_ctx() { return ctx_.get(); }
++  const uint8_t *Get_fixed_nonce() const { return fixed_nonce_; }
++  bool is_omit_ad() const { return false; }
++
++private:
+   // GetAdditionalData returns the additional data, writing into |storage| if
+   // necessary.
+   Span<const uint8_t> GetAdditionalData(uint8_t storage[13], uint8_t type,
+diff --git a/ssl/ssl_aead_ctx.cc b/ssl/ssl_aead_ctx.cc
+index 25569221b..b1b2779f8 100644
+--- a/ssl/ssl_aead_ctx.cc
++++ b/ssl/ssl_aead_ctx.cc
+@@ -427,4 +427,5 @@ bool SSLAEADContext::GetIV(const uint8_t **out_iv, size_t *out_iv_len) const {
+          EVP_AEAD_CTX_get_iv(ctx_.get(), out_iv, out_iv_len);
+ }
+ 
++
+ BSSL_NAMESPACE_END
+diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
+index 26ffd5036..496864636 100644
+--- a/ssl/ssl_lib.cc
++++ b/ssl/ssl_lib.cc
+@@ -2917,6 +2917,17 @@ void SSL_set_renegotiate_mode(SSL *ssl, enum ssl_renegotiate_mode_t mode) {
+   ssl_maybe_shed_handshake_config(ssl);
+ }
+ 
++EVP_AEAD_CTX *SSL_get_write_aead_ctx(SSL *ssl) {
++  return ssl->s3->aead_write_ctx.get()->Get_evp_aead_ctx();
++}
++
++const uint8_t *SSL_get_write_iv_sequence(SSL *ssl, uint64_t **sequence, char *noad) {
++  *noad = ssl->s3->aead_write_ctx.get()->is_omit_ad();
++  *sequence = &ssl->s3->write_sequence;
++  return ssl->s3->aead_write_ctx.get()->Get_fixed_nonce();
++}
++
++
+ int SSL_get_ivs(const SSL *ssl, const uint8_t **out_read_iv,
+                 const uint8_t **out_write_iv, size_t *out_iv_len) {
+   size_t write_iv_len;
+diff --git a/ssl/test/bssl_shim.cc b/ssl/test/bssl_shim.cc
+index 73aa5c62e..906f8b012 100644
+--- a/ssl/test/bssl_shim.cc
++++ b/ssl/test/bssl_shim.cc
+@@ -12,6 +12,7 @@
+  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+ 
++#include <cinttypes>
+ #include <openssl/base.h>
+ 
+ #if !defined(OPENSSL_WINDOWS)
+diff --git a/tool/internal.h b/tool/internal.h
+index 7f3692a5e..bbcb2ed8c 100644
+--- a/tool/internal.h
++++ b/tool/internal.h
+@@ -17,6 +17,7 @@
+ 
+ #include <openssl/base.h>
+ #include <openssl/span.h>
++#include <stdio.h>
+ 
+ #include <string>
+ #include <utility>
+diff --git a/util/embed_test_data.go b/util/embed_test_data.go
+index ae7135fae..afe37c238 100644
+--- a/util/embed_test_data.go
++++ b/util/embed_test_data.go
+@@ -118,6 +118,7 @@ func main() {
+ 
+ #include <algorithm>
+ #include <string>
++#include <stdio.h>
+ 
+ 
+ `)
