@@ -7,6 +7,7 @@ class OpenlitespeedAT19 < Formula
   head "https://github.com/litespeedtech/openlitespeed.git"
 
   bottle do
+    root_url "https://github.com/puleeno/homebrew-openlitespeed/releases/download/1.9.1-RC1"
     sha256 cellar: :any, arm64_sonoma: "4d0d53a539b5bec85c6784475dd8a0cfbdb90011fa4309691c877fbab9bc1179"
   end
 
